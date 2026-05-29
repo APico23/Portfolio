@@ -123,6 +123,12 @@ h2 {
   gap: 0.6rem;
 }
 
+.form-actions {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
 label {
   display: grid;
   gap: 0.3rem;
@@ -202,6 +208,15 @@ button.danger {
   justify-content: space-between;
   align-items: center;
   gap: 0.4rem;
+}
+
+.card-list li.selectable {
+  cursor: pointer;
+}
+
+.card-list li.selectable:hover {
+  border-color: #d8af3f;
+  box-shadow: inset 0 0 0 1px #eed896;
 }
 
 .card-main {

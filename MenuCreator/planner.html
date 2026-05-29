@@ -44,7 +44,11 @@
                 Disliked Foods (comma-separated)
                 <input id="profile-dislikes" placeholder="mushrooms, olives" />
               </label>
-              <button type="submit">Add Profile</button>
+              <div class="form-actions">
+                <button id="profile-submit" type="submit">Add Profile</button>
+                <button id="profile-cancel" class="secondary" type="button" hidden>Cancel Edit</button>
+              </div>
+              <p id="profile-edit-hint" class="hint" hidden>Editing profile. Click Save Profile to apply changes.</p>
             </form>
             <ul id="profiles-list" class="card-list"></ul>
           </section>
@@ -73,7 +77,11 @@
                 <input id="recipe-reference" placeholder="https://... or Cookbook Name p. 20" />
               </label>
               <p class="hint">Provide full recipe text, or a reference link/source, or both.</p>
-              <button type="submit">Add Recipe</button>
+              <div class="form-actions">
+                <button id="recipe-submit" type="submit">Add Recipe</button>
+                <button id="recipe-cancel" class="secondary" type="button" hidden>Cancel Edit</button>
+              </div>
+              <p id="recipe-edit-hint" class="hint" hidden>Editing recipe. Click Save Recipe to apply changes.</p>
             </form>
             <ul id="recipes-list" class="card-list"></ul>
           </section>
@@ -93,7 +101,11 @@
                 Score (1-100)
                 <input id="rating-value" type="number" min="1" max="100" value="80" required />
               </label>
-              <button type="submit">Submit Review</button>
+              <div class="form-actions">
+                <button id="rating-submit" type="submit">Submit Review</button>
+                <button id="rating-cancel" class="secondary" type="button" hidden>Cancel Edit</button>
+              </div>
+              <p id="rating-edit-hint" class="hint" hidden>Editing review. Click Save Review to apply changes.</p>
             </form>
             <ul id="ratings-list" class="card-list compact"></ul>
           </section>

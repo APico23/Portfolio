@@ -5,6 +5,11 @@ const state = {
   recipes: [],
   ratings: [],
   plans: {},
+  editing: {
+    profileId: null,
+    recipeId: null,
+    ratingId: null,
+  },
   currentView: "data",
   generator: {
     start: todayISO(),
@@ -23,6 +28,9 @@ const els = {
   profileName: document.getElementById("profile-name"),
   profileDislikes: document.getElementById("profile-dislikes"),
   profilesList: document.getElementById("profiles-list"),
+  profileSubmit: document.getElementById("profile-submit"),
+  profileCancel: document.getElementById("profile-cancel"),
+  profileEditHint: document.getElementById("profile-edit-hint"),
 
   recipeForm: document.getElementById("recipe-form"),
   recipeName: document.getElementById("recipe-name"),
@@ -31,12 +39,18 @@ const els = {
   recipeText: document.getElementById("recipe-text"),
   recipeReference: document.getElementById("recipe-reference"),
   recipesList: document.getElementById("recipes-list"),
+  recipeSubmit: document.getElementById("recipe-submit"),
+  recipeCancel: document.getElementById("recipe-cancel"),
+  recipeEditHint: document.getElementById("recipe-edit-hint"),
 
   ratingForm: document.getElementById("rating-form"),
   ratingRecipe: document.getElementById("rating-recipe"),
   ratingProfile: document.getElementById("rating-profile"),
   ratingValue: document.getElementById("rating-value"),
   ratingsList: document.getElementById("ratings-list"),
+  ratingSubmit: document.getElementById("rating-submit"),
+  ratingCancel: document.getElementById("rating-cancel"),
+  ratingEditHint: document.getElementById("rating-edit-hint"),
 
   generateMode: document.getElementById("generate-mode"),
   generateCount: document.getElementById("generate-count"),
@@ -82,6 +96,9 @@ function bindEvents() {
   els.profileForm.addEventListener("submit", onProfileSubmit);
   els.recipeForm.addEventListener("submit", onRecipeSubmit);
   els.ratingForm.addEventListener("submit", onRatingSubmit);
+  els.profileCancel.addEventListener("click", clearProfileEditMode);
+  els.recipeCancel.addEventListener("click", clearRecipeEditMode);
+  els.ratingCancel.addEventListener("click", clearRatingEditMode);
 
   els.generatePlan.addEventListener("click", onGeneratePlan);
   els.generateMode.addEventListener("change", () => {
@@ -120,6 +137,20 @@ function onProfileSubmit(event) {
     return;
   }
 
+  const editingProfileId = state.editing.profileId;
+  if (editingProfileId) {
+    const profile = state.profiles.find((x) => x.id === editingProfileId);
+    if (!profile) {
+      clearProfileEditMode();
+      return;
+    }
+    profile.name = name;
+    profile.dislikedFoods = parseCsv(els.profileDislikes.value);
+    clearProfileEditMode();
+    persistAndRender();
+    return;
+  }
+
   state.profiles.push({
     id: uid(),
     name,
@@ -143,6 +174,24 @@ function onRecipeSubmit(event) {
 
   if (!recipeText && !reference) {
     window.alert("Add either full recipe text or a reference link/source.");
+    return;
+  }
+
+  const editingRecipeId = state.editing.recipeId;
+  if (editingRecipeId) {
+    const recipe = state.recipes.find((x) => x.id === editingRecipeId);
+    if (!recipe) {
+      clearRecipeEditMode();
+      return;
+    }
+
+    recipe.name = name;
+    recipe.complexity = complexity;
+    recipe.dislikedTags = parseCsv(els.recipeDislikedTags.value);
+    recipe.recipeText = recipeText;
+    recipe.reference = reference;
+    clearRecipeEditMode();
+    persistAndRender();
     return;
   }
 
@@ -170,6 +219,21 @@ function onRatingSubmit(event) {
   }
 
   const value = clamp(toInt(els.ratingValue.value, 80), 1, 100);
+  const editingRatingId = state.editing.ratingId;
+  if (editingRatingId) {
+    const rating = state.ratings.find((x) => x.id === editingRatingId);
+    if (!rating) {
+      clearRatingEditMode();
+      return;
+    }
+    rating.recipeId = recipeId;
+    rating.profileId = els.ratingProfile.value || null;
+    rating.score = value;
+    clearRatingEditMode();
+    persistAndRender();
+    return;
+  }
+
   state.ratings.push({
     id: uid(),
     recipeId,
@@ -508,6 +572,24 @@ function renderAll() {
   renderRatingSelectors();
   renderRatings();
   renderCalendar();
+  renderEditStates();
+}
+
+function renderEditStates() {
+  const profileEditing = Boolean(state.editing.profileId);
+  els.profileSubmit.textContent = profileEditing ? "Save Profile" : "Add Profile";
+  els.profileCancel.hidden = !profileEditing;
+  els.profileEditHint.hidden = !profileEditing;
+
+  const recipeEditing = Boolean(state.editing.recipeId);
+  els.recipeSubmit.textContent = recipeEditing ? "Save Recipe" : "Add Recipe";
+  els.recipeCancel.hidden = !recipeEditing;
+  els.recipeEditHint.hidden = !recipeEditing;
+
+  const ratingEditing = Boolean(state.editing.ratingId);
+  els.ratingSubmit.textContent = ratingEditing ? "Save Review" : "Submit Review";
+  els.ratingCancel.hidden = !ratingEditing;
+  els.ratingEditHint.hidden = !ratingEditing;
 }
 
 function applyView(view, syncHash = true) {
@@ -548,9 +630,20 @@ function renderProfiles() {
 
   for (const profile of state.profiles) {
     const li = document.createElement("li");
+    li.classList.add("selectable");
     li.innerHTML = `<div class="card-main"><strong>${escapeHtml(profile.name)}</strong><small>Dislikes: ${escapeHtml(profile.dislikedFoods.join(", ") || "None")}</small></div>`;
+    li.addEventListener("click", () => startProfileEdit(profile.id));
     const btn = buildDeleteButton(() => {
       state.profiles = state.profiles.filter((x) => x.id !== profile.id);
+      state.ratings = state.ratings.map((rating) => {
+        if (rating.profileId === profile.id) {
+          return { ...rating, profileId: null };
+        }
+        return rating;
+      });
+      if (state.editing.profileId === profile.id) {
+        clearProfileEditMode();
+      }
       persistAndRender();
     });
     li.appendChild(btn);
@@ -568,7 +661,9 @@ function renderRecipes() {
   for (const recipe of state.recipes) {
     const avg = getRecipeAverage(recipe.id);
     const li = document.createElement("li");
+    li.classList.add("selectable");
     li.innerHTML = `<div class="card-main"><strong>${escapeHtml(recipe.name)}</strong><small>Complexity ${recipe.complexity}/10 | Avg: ${avg === null ? "New" : avg}</small><small>Disliked tags: ${escapeHtml(recipe.dislikedTags.join(", ") || "None")}</small></div>`;
+    li.addEventListener("click", () => startRecipeEdit(recipe.id));
     const btn = buildDeleteButton(() => {
       state.recipes = state.recipes.filter((x) => x.id !== recipe.id);
       state.ratings = state.ratings.filter((x) => x.recipeId !== recipe.id);
@@ -578,6 +673,15 @@ function renderRecipes() {
           delete state.plans[date];
         }
       });
+      if (state.editing.recipeId === recipe.id) {
+        clearRecipeEditMode();
+      }
+      if (state.editing.ratingId) {
+        const editingRating = state.ratings.find((x) => x.id === state.editing.ratingId);
+        if (!editingRating) {
+          clearRatingEditMode();
+        }
+      }
       persistAndRender();
     });
     li.appendChild(btn);
@@ -615,9 +719,79 @@ function renderRatings() {
     const recipe = state.recipes.find((x) => x.id === rating.recipeId);
     const profile = state.profiles.find((x) => x.id === rating.profileId);
     const li = document.createElement("li");
+    li.classList.add("selectable");
     li.innerHTML = `<div class="card-main"><strong>${escapeHtml(recipe ? recipe.name : "Deleted Recipe")}: ${rating.score}</strong><small>${escapeHtml(profile ? profile.name : "Household")}, ${formatDate(rating.createdAt.slice(0, 10))}</small></div>`;
+    li.addEventListener("click", () => startRatingEdit(rating.id));
+    const btn = buildDeleteButton(() => {
+      state.ratings = state.ratings.filter((x) => x.id !== rating.id);
+      if (state.editing.ratingId === rating.id) {
+        clearRatingEditMode();
+      }
+      persistAndRender();
+    });
+    li.appendChild(btn);
     els.ratingsList.appendChild(li);
   }
+}
+
+function startProfileEdit(profileId) {
+  const profile = state.profiles.find((x) => x.id === profileId);
+  if (!profile) {
+    return;
+  }
+
+  state.editing.profileId = profile.id;
+  els.profileName.value = profile.name;
+  els.profileDislikes.value = profile.dislikedFoods.join(", ");
+  renderEditStates();
+}
+
+function clearProfileEditMode() {
+  state.editing.profileId = null;
+  els.profileForm.reset();
+  renderEditStates();
+}
+
+function startRecipeEdit(recipeId) {
+  const recipe = state.recipes.find((x) => x.id === recipeId);
+  if (!recipe) {
+    return;
+  }
+
+  state.editing.recipeId = recipe.id;
+  els.recipeName.value = recipe.name;
+  els.recipeComplexity.value = recipe.complexity;
+  els.recipeDislikedTags.value = recipe.dislikedTags.join(", ");
+  els.recipeText.value = recipe.recipeText || "";
+  els.recipeReference.value = recipe.reference || "";
+  renderEditStates();
+}
+
+function clearRecipeEditMode() {
+  state.editing.recipeId = null;
+  els.recipeForm.reset();
+  els.recipeComplexity.value = 5;
+  renderEditStates();
+}
+
+function startRatingEdit(ratingId) {
+  const rating = state.ratings.find((x) => x.id === ratingId);
+  if (!rating) {
+    return;
+  }
+
+  state.editing.ratingId = rating.id;
+  els.ratingRecipe.value = rating.recipeId;
+  els.ratingProfile.value = rating.profileId || "";
+  els.ratingValue.value = rating.score;
+  renderEditStates();
+}
+
+function clearRatingEditMode() {
+  state.editing.ratingId = null;
+  els.ratingForm.reset();
+  els.ratingValue.value = 80;
+  renderEditStates();
 }
 
 function renderCalendar() {
@@ -811,7 +985,10 @@ function buildDeleteButton(onClick) {
   button.type = "button";
   button.className = "danger";
   button.textContent = "Delete";
-  button.addEventListener("click", onClick);
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    onClick();
+  });
   return button;
 }
 
@@ -837,6 +1014,11 @@ function hydrateState(parsed) {
     : { nextNewRecipeOn: null, nextEatOutOn: null };
 
   state.selectedDay = null;
+  state.editing = {
+    profileId: null,
+    recipeId: null,
+    ratingId: null,
+  };
 }
 
 function loadState() {
