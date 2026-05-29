@@ -1,0 +1,426 @@
+{
+  "profiles": [
+    {
+      "id": "p1",
+      "name": "Alex",
+      "dislikedFoods": ["mushrooms", "olives", "eggplant"]
+    },
+    {
+      "id": "p2",
+      "name": "Sam",
+      "dislikedFoods": ["cilantro", "shrimp", "blue cheese"]
+    },
+    {
+      "id": "p3",
+      "name": "Jordan",
+      "dislikedFoods": ["onion", "anchovies", "beets"]
+    },
+    {
+      "id": "p4",
+      "name": "Riley",
+      "dislikedFoods": ["brussels sprouts", "tofu"]
+    }
+  ],
+  "recipes": [
+    {
+      "id": "r1",
+      "name": "Lemon Herb Chicken Bowls",
+      "complexity": 3,
+      "dislikedTags": ["onion"],
+      "recipeText": "Roast chicken with lemon and herbs. Serve over rice with cucumber and yogurt sauce.",
+      "reference": "Family Binder p. 12",
+      "createdAt": "2026-05-28T10:00:00.000Z"
+    },
+    {
+      "id": "r2",
+      "name": "Turkey Taco Night",
+      "complexity": 4,
+      "dislikedTags": ["cilantro", "onion"],
+      "recipeText": "Cook seasoned turkey, warm tortillas, add toppings bar.",
+      "reference": "https://example.com/turkey-tacos",
+      "createdAt": "2026-05-28T10:01:00.000Z"
+    },
+    {
+      "id": "r3",
+      "name": "Baked Ziti",
+      "complexity": 5,
+      "dislikedTags": [],
+      "recipeText": "Bake pasta with marinara, ricotta, mozzarella until bubbly.",
+      "reference": "Comfort Cookbook p. 44",
+      "createdAt": "2026-05-28T10:02:00.000Z"
+    },
+    {
+      "id": "r4",
+      "name": "Garlic Butter Salmon",
+      "complexity": 4,
+      "dislikedTags": ["fish"],
+      "recipeText": "Bake salmon with garlic butter and lemon, serve with roasted potatoes.",
+      "reference": "Seafood Easy p. 21",
+      "createdAt": "2026-05-28T10:03:00.000Z"
+    },
+    {
+      "id": "r5",
+      "name": "Veggie Stir Fry",
+      "complexity": 4,
+      "dislikedTags": ["tofu", "onion"],
+      "recipeText": "Stir fry mixed vegetables with soy-ginger sauce over noodles.",
+      "reference": "Quick Wok p. 18",
+      "createdAt": "2026-05-28T10:04:00.000Z"
+    },
+    {
+      "id": "r6",
+      "name": "BBQ Chicken Flatbreads",
+      "complexity": 3,
+      "dislikedTags": ["onion"],
+      "recipeText": "Top flatbread with BBQ chicken, cheese, red onion, bake until crisp.",
+      "reference": "Weeknight Wins p. 66",
+      "createdAt": "2026-05-28T10:05:00.000Z"
+    },
+    {
+      "id": "r7",
+      "name": "Creamy Tomato Tortellini",
+      "complexity": 3,
+      "dislikedTags": [],
+      "recipeText": "Simmer tortellini in creamy tomato sauce with spinach.",
+      "reference": "Pasta Club p. 31",
+      "createdAt": "2026-05-28T10:06:00.000Z"
+    },
+    {
+      "id": "r8",
+      "name": "Chicken Caesar Wraps",
+      "complexity": 2,
+      "dislikedTags": ["anchovies"],
+      "recipeText": "Fill wraps with grilled chicken, romaine, parmesan, Caesar dressing.",
+      "reference": "Lunch to Dinner p. 15",
+      "createdAt": "2026-05-28T10:07:00.000Z"
+    },
+    {
+      "id": "r9",
+      "name": "Beef and Broccoli",
+      "complexity": 5,
+      "dislikedTags": ["broccoli"],
+      "recipeText": "Sear beef, stir fry broccoli, toss with garlic soy sauce.",
+      "reference": "https://example.com/beef-broccoli",
+      "createdAt": "2026-05-28T10:08:00.000Z"
+    },
+    {
+      "id": "r10",
+      "name": "Greek Chicken Pitas",
+      "complexity": 3,
+      "dislikedTags": ["olives", "onion"],
+      "recipeText": "Fill pitas with chicken, cucumber, tomato, feta, tzatziki.",
+      "reference": "Mediterranean Meals p. 23",
+      "createdAt": "2026-05-28T10:09:00.000Z"
+    },
+    {
+      "id": "r11",
+      "name": "Shepherd's Pie",
+      "complexity": 6,
+      "dislikedTags": ["onion"],
+      "recipeText": "Top beef and vegetable filling with mashed potatoes, bake golden.",
+      "reference": "Family Classics p. 52",
+      "createdAt": "2026-05-28T10:10:00.000Z"
+    },
+    {
+      "id": "r12",
+      "name": "Teriyaki Meatballs",
+      "complexity": 4,
+      "dislikedTags": ["onion"],
+      "recipeText": "Bake turkey meatballs, glaze with teriyaki, serve with rice.",
+      "reference": "Meal Prep Nights p. 38",
+      "createdAt": "2026-05-28T10:11:00.000Z"
+    },
+    {
+      "id": "r13",
+      "name": "Chicken Curry",
+      "complexity": 6,
+      "dislikedTags": ["onion"],
+      "recipeText": "Cook onions, curry paste, chicken, coconut milk until tender.",
+      "reference": "Curry Handbook p. 17",
+      "createdAt": "2026-05-28T10:12:00.000Z"
+    },
+    {
+      "id": "r14",
+      "name": "Loaded Baked Potato Bar",
+      "complexity": 2,
+      "dislikedTags": ["blue cheese", "onion"],
+      "recipeText": "Bake potatoes and serve with topping bar.",
+      "reference": "Simple Suppers p. 9",
+      "createdAt": "2026-05-28T10:13:00.000Z"
+    },
+    {
+      "id": "r15",
+      "name": "Honey Garlic Pork Chops",
+      "complexity": 4,
+      "dislikedTags": [],
+      "recipeText": "Pan sear pork chops, glaze with honey garlic sauce.",
+      "reference": "Skillet Weeknights p. 29",
+      "createdAt": "2026-05-28T10:14:00.000Z"
+    },
+    {
+      "id": "r16",
+      "name": "Mushroom Risotto",
+      "complexity": 8,
+      "dislikedTags": ["mushrooms", "onion"],
+      "recipeText": "Stir arborio rice with broth and mushrooms until creamy.",
+      "reference": "Italian Home p. 74",
+      "createdAt": "2026-05-28T10:15:00.000Z"
+    },
+    {
+      "id": "r17",
+      "name": "Shrimp Scampi",
+      "complexity": 5,
+      "dislikedTags": ["shrimp"],
+      "recipeText": "Saute shrimp with garlic, butter, lemon, toss with linguine.",
+      "reference": "Seafood Easy p. 48",
+      "createdAt": "2026-05-28T10:16:00.000Z"
+    },
+    {
+      "id": "r18",
+      "name": "Roast Chicken and Veg",
+      "complexity": 4,
+      "dislikedTags": ["onion"],
+      "recipeText": "Roast chicken thighs, carrots, potatoes, onions on one pan.",
+      "reference": "https://example.com/roast-chicken-veg",
+      "createdAt": "2026-05-28T10:17:00.000Z"
+    },
+    {
+      "id": "r19",
+      "name": "Black Bean Enchiladas",
+      "complexity": 5,
+      "dislikedTags": ["cilantro", "onion"],
+      "recipeText": "Roll tortillas with bean filling, sauce, and cheese, then bake.",
+      "reference": "Meatless Nights p. 41",
+      "createdAt": "2026-05-28T10:18:00.000Z"
+    },
+    {
+      "id": "r20",
+      "name": "Turkey Chili",
+      "complexity": 4,
+      "dislikedTags": ["beans", "onion"],
+      "recipeText": "Simmer turkey, beans, tomatoes, and chili spices.",
+      "reference": "Family Binder p. 4",
+      "createdAt": "2026-05-28T10:19:00.000Z"
+    },
+    {
+      "id": "r21",
+      "name": "Chicken Fajita Bowls",
+      "complexity": 4,
+      "dislikedTags": ["onion", "cilantro"],
+      "recipeText": "Season and sear chicken with peppers and onions. Serve over rice.",
+      "reference": "Tex-Mex Nights p. 13",
+      "createdAt": "2026-05-28T10:20:00.000Z"
+    },
+    {
+      "id": "r22",
+      "name": "Eggplant Parmesan",
+      "complexity": 7,
+      "dislikedTags": ["eggplant"],
+      "recipeText": "Bread eggplant slices, fry lightly, layer with marinara and cheese, bake.",
+      "reference": "Italian Home p. 58",
+      "createdAt": "2026-05-28T10:21:00.000Z"
+    },
+    {
+      "id": "r23",
+      "name": "Beef Stroganoff",
+      "complexity": 6,
+      "dislikedTags": ["mushrooms", "onion"],
+      "recipeText": "Saute beef and mushrooms, finish with sour cream sauce over noodles.",
+      "reference": "Comfort Cookbook p. 76",
+      "createdAt": "2026-05-28T10:22:00.000Z"
+    },
+    {
+      "id": "r24",
+      "name": "Pesto Chicken Pasta",
+      "complexity": 3,
+      "dislikedTags": ["nuts"],
+      "recipeText": "Toss pasta with pesto, grilled chicken, and cherry tomatoes.",
+      "reference": "Pasta Club p. 22",
+      "createdAt": "2026-05-28T10:23:00.000Z"
+    },
+    {
+      "id": "r25",
+      "name": "Stuffed Bell Peppers",
+      "complexity": 5,
+      "dislikedTags": ["onion"],
+      "recipeText": "Fill peppers with rice, beef, and sauce. Bake until tender.",
+      "reference": "Weeknight Wins p. 52",
+      "createdAt": "2026-05-28T10:24:00.000Z"
+    },
+    {
+      "id": "r26",
+      "name": "Sausage and Potato Skillet",
+      "complexity": 3,
+      "dislikedTags": ["onion"],
+      "recipeText": "Crisp sausage and potatoes in skillet with peppers and onions.",
+      "reference": "Skillet Weeknights p. 8",
+      "createdAt": "2026-05-28T10:25:00.000Z"
+    },
+    {
+      "id": "r27",
+      "name": "Chicken and Dumplings",
+      "complexity": 7,
+      "dislikedTags": ["onion"],
+      "recipeText": "Simmer chicken stew, drop dumplings, cook until fluffy.",
+      "reference": "Family Classics p. 84",
+      "createdAt": "2026-05-28T10:26:00.000Z"
+    },
+    {
+      "id": "r28",
+      "name": "Mediterranean Grain Bowls",
+      "complexity": 4,
+      "dislikedTags": ["olives", "onion"],
+      "recipeText": "Build bowls with quinoa, chicken, cucumber, tomato, feta, olives.",
+      "reference": "Mediterranean Meals p. 19",
+      "createdAt": "2026-05-28T10:27:00.000Z"
+    },
+    {
+      "id": "r29",
+      "name": "Crispy Chicken Sandwiches",
+      "complexity": 5,
+      "dislikedTags": ["onion"],
+      "recipeText": "Bread and bake chicken cutlets, assemble with slaw on buns.",
+      "reference": "Sandwich Night p. 34",
+      "createdAt": "2026-05-28T10:28:00.000Z"
+    },
+    {
+      "id": "r30",
+      "name": "White Bean Soup",
+      "complexity": 4,
+      "dislikedTags": ["beans", "onion"],
+      "recipeText": "Simmer white beans with broth, greens, sausage optional.",
+      "reference": "Soup Season p. 11",
+      "createdAt": "2026-05-28T10:29:00.000Z"
+    },
+    {
+      "id": "r31",
+      "name": "Sweet Chili Chicken Lettuce Cups",
+      "complexity": 4,
+      "dislikedTags": ["onion"],
+      "recipeText": "Cook minced chicken in sweet chili sauce and serve in lettuce leaves.",
+      "reference": "Quick Wok p. 52",
+      "createdAt": "2026-05-28T10:30:00.000Z"
+    },
+    {
+      "id": "r32",
+      "name": "Spinach Artichoke Pasta Bake",
+      "complexity": 5,
+      "dislikedTags": [],
+      "recipeText": "Mix pasta with spinach artichoke cream sauce and bake with cheese.",
+      "reference": "Pasta Club p. 49",
+      "createdAt": "2026-05-28T10:31:00.000Z"
+    },
+    {
+      "id": "r33",
+      "name": "Chicken Shawarma Plate",
+      "complexity": 6,
+      "dislikedTags": ["onion"],
+      "recipeText": "Marinate chicken with shawarma spices, roast, serve with rice and salad.",
+      "reference": "Mediterranean Meals p. 62",
+      "createdAt": "2026-05-28T10:32:00.000Z"
+    },
+    {
+      "id": "r34",
+      "name": "Stuffed Shells",
+      "complexity": 6,
+      "dislikedTags": [],
+      "recipeText": "Fill pasta shells with ricotta-spinach mixture and bake in sauce.",
+      "reference": "Italian Home p. 37",
+      "createdAt": "2026-05-28T10:33:00.000Z"
+    },
+    {
+      "id": "r35",
+      "name": "Maple Dijon Chicken",
+      "complexity": 3,
+      "dislikedTags": [],
+      "recipeText": "Bake chicken with maple dijon glaze and green beans.",
+      "reference": "Weeknight Wins p. 12",
+      "createdAt": "2026-05-28T10:34:00.000Z"
+    },
+    {
+      "id": "r36",
+      "name": "Beet and Goat Cheese Pasta",
+      "complexity": 6,
+      "dislikedTags": ["beets"],
+      "recipeText": "Roast beets, blend into sauce, toss with pasta and goat cheese.",
+      "reference": "Modern Vegetarian p. 45",
+      "createdAt": "2026-05-28T10:35:00.000Z"
+    },
+    {
+      "id": "r37",
+      "name": "Anchovy Garlic Spaghetti",
+      "complexity": 5,
+      "dislikedTags": ["anchovies"],
+      "recipeText": "Melt anchovies into garlic olive oil sauce and toss with spaghetti.",
+      "reference": "Pasta Club p. 57",
+      "createdAt": "2026-05-28T10:36:00.000Z"
+    },
+    {
+      "id": "r38",
+      "name": "Brussels Sprouts Gnocchi",
+      "complexity": 4,
+      "dislikedTags": ["brussels sprouts"],
+      "recipeText": "Pan fry gnocchi and sprouts in brown butter and sage.",
+      "reference": "Modern Vegetarian p. 21",
+      "createdAt": "2026-05-28T10:37:00.000Z"
+    },
+    {
+      "id": "r39",
+      "name": "Cheeseburger Bowls",
+      "complexity": 3,
+      "dislikedTags": ["onion"],
+      "recipeText": "Build bowls with beef, lettuce, pickles, potatoes, burger sauce.",
+      "reference": "Family Binder p. 28",
+      "createdAt": "2026-05-28T10:38:00.000Z"
+    },
+    {
+      "id": "r40",
+      "name": "Tofu Peanut Noodles",
+      "complexity": 5,
+      "dislikedTags": ["tofu", "nuts"],
+      "recipeText": "Crisp tofu and toss with noodles in peanut sauce.",
+      "reference": "Quick Wok p. 61",
+      "createdAt": "2026-05-28T10:39:00.000Z"
+    }
+  ],
+  "ratings": [
+    { "id": "ra1", "recipeId": "r1", "profileId": "p1", "score": 92, "createdAt": "2026-05-01T19:00:00.000Z" },
+    { "id": "ra2", "recipeId": "r1", "profileId": "p2", "score": 88, "createdAt": "2026-05-08T19:00:00.000Z" },
+    { "id": "ra3", "recipeId": "r2", "profileId": "p3", "score": 84, "createdAt": "2026-05-02T19:00:00.000Z" },
+    { "id": "ra4", "recipeId": "r3", "profileId": "p4", "score": 90, "createdAt": "2026-05-03T19:00:00.000Z" },
+    { "id": "ra5", "recipeId": "r3", "profileId": "p1", "score": 93, "createdAt": "2026-05-13T19:00:00.000Z" },
+    { "id": "ra6", "recipeId": "r4", "profileId": "p2", "score": 79, "createdAt": "2026-05-04T19:00:00.000Z" },
+    { "id": "ra7", "recipeId": "r5", "profileId": "p3", "score": 74, "createdAt": "2026-05-05T19:00:00.000Z" },
+    { "id": "ra8", "recipeId": "r6", "profileId": "p4", "score": 87, "createdAt": "2026-05-06T19:00:00.000Z" },
+    { "id": "ra9", "recipeId": "r7", "profileId": "p1", "score": 91, "createdAt": "2026-05-07T19:00:00.000Z" },
+    { "id": "ra10", "recipeId": "r8", "profileId": "p2", "score": 89, "createdAt": "2026-05-09T19:00:00.000Z" },
+    { "id": "ra11", "recipeId": "r9", "profileId": "p3", "score": 85, "createdAt": "2026-05-10T19:00:00.000Z" },
+    { "id": "ra12", "recipeId": "r10", "profileId": "p4", "score": 82, "createdAt": "2026-05-11T19:00:00.000Z" },
+    { "id": "ra13", "recipeId": "r11", "profileId": "p1", "score": 76, "createdAt": "2026-05-12T19:00:00.000Z" },
+    { "id": "ra14", "recipeId": "r12", "profileId": "p2", "score": 86, "createdAt": "2026-05-14T19:00:00.000Z" },
+    { "id": "ra15", "recipeId": "r13", "profileId": "p3", "score": 80, "createdAt": "2026-05-15T19:00:00.000Z" },
+    { "id": "ra16", "recipeId": "r14", "profileId": "p4", "score": 88, "createdAt": "2026-05-16T19:00:00.000Z" },
+    { "id": "ra17", "recipeId": "r15", "profileId": "p1", "score": 90, "createdAt": "2026-05-17T19:00:00.000Z" },
+    { "id": "ra18", "recipeId": "r16", "profileId": "p2", "score": 61, "createdAt": "2026-05-18T19:00:00.000Z" },
+    { "id": "ra19", "recipeId": "r17", "profileId": "p3", "score": 65, "createdAt": "2026-05-19T19:00:00.000Z" },
+    { "id": "ra20", "recipeId": "r18", "profileId": "p4", "score": 87, "createdAt": "2026-05-20T19:00:00.000Z" },
+    { "id": "ra21", "recipeId": "r19", "profileId": "p1", "score": 78, "createdAt": "2026-05-21T19:00:00.000Z" },
+    { "id": "ra22", "recipeId": "r20", "profileId": "p2", "score": 83, "createdAt": "2026-05-22T19:00:00.000Z" },
+    { "id": "ra23", "recipeId": "r21", "profileId": "p3", "score": 85, "createdAt": "2026-05-23T19:00:00.000Z" },
+    { "id": "ra24", "recipeId": "r24", "profileId": "p4", "score": 89, "createdAt": "2026-05-24T19:00:00.000Z" },
+    { "id": "ra25", "recipeId": "r25", "profileId": "p1", "score": 84, "createdAt": "2026-05-25T19:00:00.000Z" },
+    { "id": "ra26", "recipeId": "r26", "profileId": "p2", "score": 88, "createdAt": "2026-05-26T19:00:00.000Z" },
+    { "id": "ra27", "recipeId": "r29", "profileId": "p3", "score": 86, "createdAt": "2026-05-27T19:00:00.000Z" }
+  ],
+  "plans": {},
+  "generator": {
+    "start": "2026-05-28",
+    "mode": "days",
+    "count": 45
+  },
+  "cadence": {
+    "nextNewRecipeOn": null,
+    "nextEatOutOn": null
+  },
+  "selectedDay": null
+}

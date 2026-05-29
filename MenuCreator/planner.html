@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dinner Menu Planner</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div>
+          <h1>Dinner Menu Planner</h1>
+          <p>Plan balanced dinners with profile dislikes, ratings, and smart rotation.</p>
+        </div>
+        <div class="hero-actions">
+          <button class="secondary" type="button" onclick="window.location.href='../index.html'">Back to Home</button>
+          <button id="clear-all" class="danger data-action">Clear All Data</button>
+          <button id="seed-demo" class="secondary data-action">Seed Demo Data</button>
+          <button id="save-json" class="secondary">Save JSON</button>
+          <label class="import-label">
+            Load JSON
+            <input id="load-json" type="file" accept="application/json" />
+          </label>
+          <button id="clear-calendar" class="danger calendar-action">Clear Calendar</button>
+        </div>
+      </header>
+
+      <nav class="view-switch">
+        <button id="nav-data" class="secondary" type="button">Data Entry</button>
+        <button id="nav-calendar" class="secondary" type="button">Calendar</button>
+      </nav>
+
+      <section id="view-data" class="app-view">
+        <main class="layout">
+          <section class="panel">
+            <h2>Eater Profiles</h2>
+            <form id="profile-form" class="stack">
+              <label>
+                Name
+                <input id="profile-name" required placeholder="Person name" />
+              </label>
+              <label>
+                Disliked Foods (comma-separated)
+                <input id="profile-dislikes" placeholder="mushrooms, olives" />
+              </label>
+              <button type="submit">Add Profile</button>
+            </form>
+            <ul id="profiles-list" class="card-list"></ul>
+          </section>
+
+          <section class="panel">
+            <h2>Recipe / Meal Ideas</h2>
+            <form id="recipe-form" class="stack">
+              <label>
+                Meal Name
+                <input id="recipe-name" required placeholder="Lemon Chicken Bowl" />
+              </label>
+              <label>
+                Complexity (1-10)
+                <input id="recipe-complexity" type="number" min="1" max="10" value="5" required />
+              </label>
+              <label>
+                Potential Disliked Foods (comma-separated)
+                <input id="recipe-disliked-tags" placeholder="onion, cilantro" />
+              </label>
+              <label>
+                Full Recipe (optional)
+                <textarea id="recipe-text" rows="3" placeholder="Steps, ingredients, notes..."></textarea>
+              </label>
+              <label>
+                Reference Link / Cookbook (optional)
+                <input id="recipe-reference" placeholder="https://... or Cookbook Name p. 20" />
+              </label>
+              <p class="hint">Provide full recipe text, or a reference link/source, or both.</p>
+              <button type="submit">Add Recipe</button>
+            </form>
+            <ul id="recipes-list" class="card-list"></ul>
+          </section>
+
+          <section class="panel">
+            <h2>Meal Reviews</h2>
+            <form id="rating-form" class="stack">
+              <label>
+                Recipe
+                <select id="rating-recipe" required></select>
+              </label>
+              <label>
+                Eater (optional)
+                <select id="rating-profile"></select>
+              </label>
+              <label>
+                Score (1-100)
+                <input id="rating-value" type="number" min="1" max="100" value="80" required />
+              </label>
+              <button type="submit">Submit Review</button>
+            </form>
+            <ul id="ratings-list" class="card-list compact"></ul>
+          </section>
+        </main>
+      </section>
+
+      <section id="view-calendar" class="app-view">
+        <section class="panel planner-panel">
+          <div class="planner-controls">
+            <h2>Planner Generator</h2>
+            <div class="control-row">
+              <label>
+                Generate By
+                <select id="generate-mode">
+                  <option value="days">Days</option>
+                  <option value="months">Months</option>
+                </select>
+              </label>
+              <label>
+                Count
+                <input id="generate-count" type="number" min="1" value="30" />
+              </label>
+              <label>
+                Start Date
+                <input id="generate-start" type="date" />
+              </label>
+              <button id="generate-plan">Generate Plan</button>
+            </div>
+            <p id="planner-status" class="hint"></p>
+          </div>
+
+          <div class="calendar-wrap">
+            <div class="calendar-header">
+              <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+            </div>
+            <div id="calendar-grid" class="calendar-grid"></div>
+          </div>
+        </section>
+      </section>
+    </div>
+
+    <dialog id="day-dialog">
+      <article>
+        <h3 id="dialog-date"></h3>
+        <p id="dialog-title"></p>
+        <p id="dialog-meta"></p>
+        <p id="dialog-rating"></p>
+        <p id="dialog-dislikes"></p>
+        <p id="dialog-recipe"></p>
+        <p id="dialog-ref"></p>
+        <div class="dialog-actions">
+          <button id="regenerate-day">Regenerate Day</button>
+          <button id="close-dialog" class="secondary">Close</button>
+        </div>
+      </article>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
