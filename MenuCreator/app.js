@@ -379,7 +379,7 @@ function pickRecipeForDate(
 
   const scored = filtered.map((recipe) => ({
     recipe,
-    score: scoreRecipe(recipe, date),
+    score: scoreRecipe(recipe, date, inProgressEntries),
   }));
 
   scored.sort((a, b) => b.score - a.score);
@@ -394,7 +394,7 @@ function pickRecipeForDate(
   };
 }
 
-function scoreRecipe(recipe, date) {
+function scoreRecipe(recipe, date, inProgressEntries = []) {
   const avgRating = getRecipeAverage(recipe.id);
   const ratingNorm = avgRating === null ? 0.58 : avgRating / 100;
   const complexityNorm = recipe.complexity / 10;
@@ -405,13 +405,73 @@ function scoreRecipe(recipe, date) {
 
   const dislikeBurden = computeDislikeBurden(recipe);
   const recentDislikePenalty = computeRecentDislikePenalty(recipe, date);
+  const favoriteBalance = computeFavoriteBalanceAdjustment(recipe, date, inProgressEntries, avgRating);
+  const complexityBalance = computeComplexityBalanceAdjustment(recipe, date, inProgressEntries);
 
   // Weighted score balancing quality, ease, and fairness.
   const base = recencyNorm * 0.36 + ratingNorm * 0.34 + (1 - complexityNorm) * 0.16;
   const penalties = dislikeBurden * 0.17 + recentDislikePenalty * 0.14;
   const explorationBoost = avgRating === null ? 0.06 : 0;
 
-  return Math.max(0.01, base - penalties + explorationBoost);
+  return Math.max(0.01, base - penalties + explorationBoost + favoriteBalance + complexityBalance);
+}
+
+function computeFavoriteBalanceAdjustment(recipe, date, inProgressEntries, avgRating = getRecipeAverage(recipe.id)) {
+  const priorEntries = getPriorRecipeEntries(date, inProgressEntries);
+  const recentWeek = priorEntries.filter((entry) => daysBetween(entry.date, date) <= 6);
+  const recentFavorites = recentWeek.filter((entry) => isFavoriteRecipeId(entry.recipeId)).length;
+  const daysSinceFavorite = getDaysSinceLastFavorite(date, inProgressEntries);
+  const isFavorite = isFavoriteRating(avgRating);
+
+  let adjustment = 0;
+  if (isFavorite && recentFavorites >= 2) {
+    adjustment -= 0.14 + ((recentFavorites - 2) * 0.03);
+  }
+
+  if (isFavorite && daysSinceFavorite !== null && daysSinceFavorite >= 4) {
+    adjustment += Math.min(0.12, 0.03 * (daysSinceFavorite - 3));
+  }
+
+  if (!isFavorite && daysSinceFavorite !== null && daysSinceFavorite >= 6) {
+    adjustment -= Math.min(0.08, 0.02 * (daysSinceFavorite - 5));
+  }
+
+  return adjustment;
+}
+
+function computeComplexityBalanceAdjustment(recipe, date, inProgressEntries) {
+  const priorEntries = getPriorRecipeEntries(date, inProgressEntries);
+  const recentWeek = priorEntries.filter((entry) => daysBetween(entry.date, date) <= 6);
+  const recentComplexities = recentWeek
+    .map((entry) => getRecipeComplexity(entry.recipeId))
+    .filter((value) => value !== null);
+
+  if (!recentComplexities.length) {
+    return 0;
+  }
+
+  const recentComplexMeals = recentComplexities.filter((value) => value >= 7).length;
+  const recentEasyMeals = recentComplexities.filter((value) => value <= 3).length;
+  const avgRecentComplexity = recentComplexities.reduce((sum, value) => sum + value, 0) / recentComplexities.length;
+
+  let adjustment = 0;
+  if (recipe.complexity >= 7 && recentComplexMeals >= 2) {
+    adjustment -= 0.14 + ((recentComplexMeals - 2) * 0.04);
+  }
+
+  if (recipe.complexity <= 3 && recentEasyMeals >= 3) {
+    adjustment -= 0.05 + ((recentEasyMeals - 3) * 0.02);
+  }
+
+  if (avgRecentComplexity >= 5.8 && recipe.complexity <= 4) {
+    adjustment += 0.08;
+  }
+
+  if (avgRecentComplexity <= 3.2 && recipe.complexity >= 5 && recipe.complexity <= 7) {
+    adjustment += 0.04;
+  }
+
+  return adjustment;
 }
 
 function computeRecentDislikePenalty(recipe, date) {
@@ -519,6 +579,37 @@ function getLastServedDate(recipeId, beforeDate) {
     .sort((a, b) => (a < b ? 1 : -1));
 
   return dates[0] || null;
+}
+
+function getPriorRecipeEntries(beforeDate, inProgressEntries = []) {
+  return Object.values(state.plans)
+    .concat(inProgressEntries || [])
+    .filter((entry) => entry.type === "recipe" && entry.date < beforeDate)
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+function getDaysSinceLastFavorite(beforeDate, inProgressEntries = []) {
+  const favoriteEntry = getPriorRecipeEntries(beforeDate, inProgressEntries)
+    .find((entry) => isFavoriteRecipeId(entry.recipeId));
+
+  if (!favoriteEntry) {
+    return null;
+  }
+
+  return daysBetween(favoriteEntry.date, beforeDate);
+}
+
+function isFavoriteRecipeId(recipeId) {
+  return isFavoriteRating(getRecipeAverage(recipeId));
+}
+
+function isFavoriteRating(avgRating) {
+  return avgRating !== null && avgRating >= 85;
+}
+
+function getRecipeComplexity(recipeId) {
+  const recipe = state.recipes.find((x) => x.id === recipeId);
+  return recipe ? recipe.complexity : null;
 }
 
 function getRecipeAverage(recipeId) {
@@ -892,15 +983,45 @@ function loadJson(event) {
   reader.onload = () => {
     try {
       const parsed = JSON.parse(String(reader.result));
-      hydrateState(parsed);
+      mergeImportedState(parsed);
       persistAndRender();
-      window.alert("Load completed.");
+      window.alert("Load completed. Imported data was merged with your existing planner data.");
     } catch (_error) {
       window.alert("Invalid JSON file.");
     }
   };
   reader.readAsText(file);
   event.target.value = "";
+}
+
+function mergeImportedState(parsed) {
+  const imported = normalizeStatePayload(parsed);
+
+  state.profiles = mergeRecordsById(state.profiles, imported.profiles);
+  state.recipes = mergeRecordsById(state.recipes, imported.recipes);
+  state.ratings = mergeRecordsById(state.ratings, imported.ratings);
+  state.plans = {
+    ...state.plans,
+    ...imported.plans,
+  };
+
+  state.cadence = {
+    nextNewRecipeOn: maxNullableNumber(state.cadence.nextNewRecipeOn, imported.cadence.nextNewRecipeOn),
+    nextEatOutOn: maxNullableNumber(state.cadence.nextEatOutOn, imported.cadence.nextEatOutOn),
+  };
+
+  state.generator = {
+    start: findNextEmptyDate(state.generator.start || imported.generator.start || todayISO()),
+    mode: state.generator.mode || imported.generator.mode,
+    count: state.generator.count || imported.generator.count,
+  };
+
+  state.selectedDay = null;
+  state.editing = {
+    profileId: null,
+    recipeId: null,
+    ratingId: null,
+  };
 }
 
 function clearAllData() {
@@ -993,25 +1114,15 @@ function buildDeleteButton(onClick) {
 }
 
 function hydrateState(parsed) {
-  state.profiles = Array.isArray(parsed.profiles) ? parsed.profiles : [];
-  state.recipes = Array.isArray(parsed.recipes) ? parsed.recipes : [];
-  state.ratings = Array.isArray(parsed.ratings) ? parsed.ratings : [];
-  state.plans = parsed.plans && typeof parsed.plans === "object" ? parsed.plans : {};
-  state.currentView = parsed.currentView === "calendar" ? "calendar" : "data";
-  state.generator = parsed.generator && typeof parsed.generator === "object"
-    ? {
-      start: parsed.generator.start || todayISO(),
-      mode: parsed.generator.mode === "months" ? "months" : "days",
-      count: clamp(toInt(parsed.generator.count, 30), 1, 365),
-    }
-    : { start: todayISO(), mode: "days", count: 30 };
+  const normalized = normalizeStatePayload(parsed);
 
-  state.cadence = parsed.cadence && typeof parsed.cadence === "object"
-    ? {
-      nextNewRecipeOn: Number.isInteger(parsed.cadence.nextNewRecipeOn) ? parsed.cadence.nextNewRecipeOn : null,
-      nextEatOutOn: Number.isInteger(parsed.cadence.nextEatOutOn) ? parsed.cadence.nextEatOutOn : null,
-    }
-    : { nextNewRecipeOn: null, nextEatOutOn: null };
+  state.profiles = normalized.profiles;
+  state.recipes = normalized.recipes;
+  state.ratings = normalized.ratings;
+  state.plans = normalized.plans;
+  state.currentView = normalized.currentView;
+  state.generator = normalized.generator;
+  state.cadence = normalized.cadence;
 
   state.selectedDay = null;
   state.editing = {
@@ -1019,6 +1130,61 @@ function hydrateState(parsed) {
     recipeId: null,
     ratingId: null,
   };
+}
+
+function normalizeStatePayload(parsed) {
+  return {
+    profiles: Array.isArray(parsed.profiles) ? parsed.profiles : [],
+    recipes: Array.isArray(parsed.recipes) ? parsed.recipes : [],
+    ratings: Array.isArray(parsed.ratings) ? parsed.ratings : [],
+    plans: parsed.plans && typeof parsed.plans === "object" ? parsed.plans : {},
+    currentView: parsed.currentView === "calendar" ? "calendar" : "data",
+    generator: parsed.generator && typeof parsed.generator === "object"
+      ? {
+        start: parsed.generator.start || todayISO(),
+        mode: parsed.generator.mode === "months" ? "months" : "days",
+        count: clamp(toInt(parsed.generator.count, 30), 1, 365),
+      }
+      : { start: todayISO(), mode: "days", count: 30 },
+    cadence: parsed.cadence && typeof parsed.cadence === "object"
+      ? {
+        nextNewRecipeOn: Number.isInteger(parsed.cadence.nextNewRecipeOn) ? parsed.cadence.nextNewRecipeOn : null,
+        nextEatOutOn: Number.isInteger(parsed.cadence.nextEatOutOn) ? parsed.cadence.nextEatOutOn : null,
+      }
+      : { nextNewRecipeOn: null, nextEatOutOn: null },
+  };
+}
+
+function mergeRecordsById(existing, incoming) {
+  const merged = [...existing];
+  const indexById = new Map(existing.map((item, index) => [item.id, index]));
+
+  for (const incomingItem of incoming) {
+    if (!incomingItem || !incomingItem.id) {
+      continue;
+    }
+
+    const existingIndex = indexById.get(incomingItem.id);
+    if (existingIndex === undefined) {
+      indexById.set(incomingItem.id, merged.length);
+      merged.push(incomingItem);
+      continue;
+    }
+
+    merged[existingIndex] = incomingItem;
+  }
+
+  return merged;
+}
+
+function maxNullableNumber(left, right) {
+  if (left === null || left === undefined) {
+    return right ?? null;
+  }
+  if (right === null || right === undefined) {
+    return left;
+  }
+  return Math.max(left, right);
 }
 
 function loadState() {

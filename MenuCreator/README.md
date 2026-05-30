@@ -20,13 +20,16 @@ A dependency-free local web app for planning dinners with weighted scheduling.
 - Generated plans append over time and auto-advance the next Start Date to the next unplanned day.
 - Click day to view details: recipe info, average rating, disliked-food tags.
 - Regenerate a single day without counting replaced meal as eaten.
-- Save/Load JSON backups include all app data (profiles, recipes, ratings, plans, generator settings, cadence, and current view).
+- Save JSON exports all app data (profiles, recipes, ratings, plans, generator settings, cadence, and current view).
+- Load JSON merges imported data into the current planner instead of replacing it, so shared recipe lists and plans can be combined.
 - Rolling calendar display window shows at most 3 past days while retaining full history for scoring.
 
 ## Planner Rules Implemented
 
 - Hard 14-day repeat lockout for recipes.
 - Weighted score factors: recency (longer since last served -> higher chance), average rating (higher -> higher chance), complexity (lower -> higher chance), dislike burden across eater profiles (higher burden -> lower chance), and recent disliked-food exposure penalty.
+- Week-level balance rules reduce clustering by spreading favorites across weeks and discouraging multiple high-complexity meals from landing close together.
+- The planner also nudges favorites back in when a stretch has gone too long without one, so favorite meals do not disappear for long periods.
 - New recipe night every 11-17 days (pseudo-random cadence).
 - Eat Out / Order In night roughly every 19-24 days (pseudo-random cadence).
 - A recipe can only be marked as a "new recipe night" once.

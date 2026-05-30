@@ -63,12 +63,22 @@ body {
 .import-label {
   position: relative;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: var(--blue-soft);
   border: 1px solid #acc6df;
   color: #1c4f7e;
   padding: 0.5rem 0.7rem;
   border-radius: 10px;
   font-weight: 600;
+  min-height: 39px;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.import-label:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
 }
 
 .import-label input {
