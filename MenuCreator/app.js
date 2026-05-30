@@ -5,6 +5,7 @@ const state = {
   recipes: [],
   ratings: [],
   plans: {},
+  historyPlans: {},
   editing: {
     profileId: null,
     recipeId: null,
@@ -379,11 +380,11 @@ function pickRecipeForDate(
 
   const scored = filtered.map((recipe) => ({
     recipe,
-    score: scoreRecipe(recipe, date, inProgressEntries),
+    score: scoreRecipe(recipe, date, inProgressEntries, forceNewRecipeNight),
   }));
 
   scored.sort((a, b) => b.score - a.score);
-  const topSlice = scored.slice(0, Math.min(5, scored.length));
+  const topSlice = scored.slice(0, Math.min(8, scored.length));
   const chosen = weightedPick(topSlice);
 
   return {
@@ -394,9 +395,9 @@ function pickRecipeForDate(
   };
 }
 
-function scoreRecipe(recipe, date, inProgressEntries = []) {
+function scoreRecipe(recipe, date, inProgressEntries = [], forceNewRecipeNight = false) {
   const avgRating = getRecipeAverage(recipe.id);
-  const ratingNorm = avgRating === null ? 0.58 : avgRating / 100;
+  const ratingNorm = avgRating === null ? 0.5 : avgRating / 100;
   const complexityNorm = recipe.complexity / 10;
 
   const lastServedDate = getLastServedDate(recipe.id, date);
@@ -411,7 +412,9 @@ function scoreRecipe(recipe, date, inProgressEntries = []) {
   // Weighted score balancing quality, ease, and fairness.
   const base = recencyNorm * 0.36 + ratingNorm * 0.34 + (1 - complexityNorm) * 0.16;
   const penalties = dislikeBurden * 0.17 + recentDislikePenalty * 0.14;
-  const explorationBoost = avgRating === null ? 0.06 : 0;
+  const explorationBoost = avgRating === null
+    ? (forceNewRecipeNight ? 0.2 : -0.05)
+    : 0;
 
   return Math.max(0.01, base - penalties + explorationBoost + favoriteBalance + complexityBalance);
 }
@@ -511,7 +514,7 @@ function daysSinceLastDislikedMealForProfile(profileId, beforeDate) {
   }
 
   const dislikedSet = new Set(profile.dislikedFoods.map(normalizeToken));
-  const entries = Object.values(state.plans)
+  const entries = getAllRecipeEntries([])
     .filter((entry) => entry.type === "recipe" && entry.date < beforeDate)
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 
@@ -553,7 +556,7 @@ function computeDislikeBurden(recipe) {
 }
 
 function violatesLockout(recipeId, targetDate, inProgressEntries) {
-  const allEntries = Object.values(state.plans).concat(inProgressEntries || []);
+  const allEntries = getAllRecipeEntries(inProgressEntries);
   for (const entry of allEntries) {
     if (entry.type !== "recipe" || entry.recipeId !== recipeId) {
       continue;
@@ -572,7 +575,7 @@ function violatesLockout(recipeId, targetDate, inProgressEntries) {
 }
 
 function getLastServedDate(recipeId, beforeDate) {
-  const dates = Object.values(state.plans)
+  const dates = getAllRecipeEntries([])
     .filter((entry) => entry.type === "recipe" && entry.recipeId === recipeId)
     .map((entry) => entry.date)
     .filter((date) => date < beforeDate)
@@ -582,10 +585,15 @@ function getLastServedDate(recipeId, beforeDate) {
 }
 
 function getPriorRecipeEntries(beforeDate, inProgressEntries = []) {
-  return Object.values(state.plans)
-    .concat(inProgressEntries || [])
+  return getAllRecipeEntries(inProgressEntries)
     .filter((entry) => entry.type === "recipe" && entry.date < beforeDate)
     .sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+function getAllRecipeEntries(inProgressEntries = []) {
+  return Object.values(state.historyPlans)
+    .concat(Object.values(state.plans))
+    .concat(inProgressEntries || []);
 }
 
 function getDaysSinceLastFavorite(beforeDate, inProgressEntries = []) {
@@ -1000,6 +1008,10 @@ function mergeImportedState(parsed) {
   state.profiles = mergeRecordsById(state.profiles, imported.profiles);
   state.recipes = mergeRecordsById(state.recipes, imported.recipes);
   state.ratings = mergeRecordsById(state.ratings, imported.ratings);
+  state.historyPlans = {
+    ...state.historyPlans,
+    ...imported.historyPlans,
+  };
   state.plans = {
     ...state.plans,
     ...imported.plans,
@@ -1033,6 +1045,7 @@ function clearAllData() {
   state.recipes = [];
   state.ratings = [];
   state.plans = {};
+  state.historyPlans = {};
   state.cadence = { nextNewRecipeOn: null, nextEatOutOn: null };
   state.generator = { start: todayISO(), mode: "days", count: 30 };
   state.selectedDay = null;
@@ -1044,6 +1057,15 @@ function clearCalendarData() {
     return;
   }
 
+  const today = todayISO();
+  const pastPlans = Object.fromEntries(
+    Object.entries(state.plans).filter(([date]) => date < today)
+  );
+
+  state.historyPlans = {
+    ...state.historyPlans,
+    ...pastPlans,
+  };
   state.plans = {};
   state.cadence = { nextNewRecipeOn: null, nextEatOutOn: null };
   state.selectedDay = null;
@@ -1119,6 +1141,7 @@ function hydrateState(parsed) {
   state.profiles = normalized.profiles;
   state.recipes = normalized.recipes;
   state.ratings = normalized.ratings;
+  state.historyPlans = normalized.historyPlans;
   state.plans = normalized.plans;
   state.currentView = normalized.currentView;
   state.generator = normalized.generator;
@@ -1137,6 +1160,7 @@ function normalizeStatePayload(parsed) {
     profiles: Array.isArray(parsed.profiles) ? parsed.profiles : [],
     recipes: Array.isArray(parsed.recipes) ? parsed.recipes : [],
     ratings: Array.isArray(parsed.ratings) ? parsed.ratings : [],
+    historyPlans: parsed.historyPlans && typeof parsed.historyPlans === "object" ? parsed.historyPlans : {},
     plans: parsed.plans && typeof parsed.plans === "object" ? parsed.plans : {},
     currentView: parsed.currentView === "calendar" ? "calendar" : "data",
     generator: parsed.generator && typeof parsed.generator === "object"

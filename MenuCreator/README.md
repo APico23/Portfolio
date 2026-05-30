@@ -18,6 +18,7 @@ A dependency-free local web app for planning dinners with weighted scheduling.
 - Average rating calculated from all ratings per recipe.
 - Calendar generation by number of days or months.
 - Generated plans append over time and auto-advance the next Start Date to the next unplanned day.
+- Clearing the visible calendar preserves only past meal history; future planned days are wiped, while already-past meals stay archived for last-eaten balancing.
 - Click day to view details: recipe info, average rating, disliked-food tags.
 - Regenerate a single day without counting replaced meal as eaten.
 - Save JSON exports all app data (profiles, recipes, ratings, plans, generator settings, cadence, and current view).
@@ -51,3 +52,4 @@ A dependency-free local web app for planning dinners with weighted scheduling.
 - Use Save JSON periodically as a backup.
 - The 3-day past window is date-based, not row-based: planned meals older than 3 days are hidden even if they would appear in earlier calendar rows.
 - Full historical plan data is still stored and used for recency/last-eaten logic.
+- New recipes are strongly favored only on designated new-recipe nights; outside those slots, unrated meals are no longer broadly boosted.
