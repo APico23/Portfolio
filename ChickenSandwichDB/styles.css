@@ -20,16 +20,16 @@ body {
   font-family: "Trebuchet MS", "Franklin Gothic Medium", sans-serif;
   color: var(--ink);
   background:
-    radial-gradient(circle at 12% 10%, rgba(215, 38, 61, 0.12), transparent 30%),
-    radial-gradient(circle at 88% 90%, rgba(143, 18, 36, 0.12), transparent 32%),
+    radial-gradient(circle at 12% 10%, rgba(255, 255, 255, 0.22), transparent 34%),
+    radial-gradient(circle at 88% 90%, rgba(255, 255, 255, 0.18), transparent 36%),
     repeating-conic-gradient(
       from 45deg,
-      #fffdfd 0deg 90deg,
-      #f8e9eb 90deg 180deg,
-      #fffdfd 180deg 270deg,
-      #f8e9eb 270deg 360deg
+      #fffefe 0deg 90deg,
+      #db2b3a 90deg 180deg,
+      #fffefe 180deg 270deg,
+      #db2b3a 270deg 360deg
     )
-    50% 50% / 68px 68px;
+    50% 50% / 64px 64px;
 }
 
 .page-shell {

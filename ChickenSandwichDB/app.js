@@ -176,18 +176,34 @@ function renderMasterSummary(rows) {
 
 async function initializeAustinPage() {
   const tableBody = document.getElementById("austinTableBody");
-  tableBody.innerHTML = `<tr><td colspan="4" class="loading-cell">Loading Austin's reviews...</td></tr>`;
+  tableBody.innerHTML = `<tr><td colspan="5" class="loading-cell">Loading Austin's reviews...</td></tr>`;
 
-  const { data, error } = await supabaseClient
-    .from("review_row_details")
-    .select("sandwich_id, sandwich_name, restaurant_name, rating, take_out, reviewer_name")
-    .eq("reviewer_name", "Austin Pico")
-    .order("rating", { ascending: false })
-    .order("sandwich_name", { ascending: true });
+  const [reviewsResult, sandwichLocationResult] = await Promise.all([
+    supabaseClient
+      .from("review_row_details")
+      .select("sandwich_id, sandwich_name, restaurant_name, rating, take_out, reviewer_name")
+      .eq("reviewer_name", "Austin Pico")
+      .order("rating", { ascending: false })
+      .order("sandwich_name", { ascending: true }),
+    supabaseClient
+      .from("chickensandwich")
+      .select("sandwich_id, restaurant:restaurant_id(state, country)")
+  ]);
 
-  if (error) {
-    throw new Error(error.message);
+  if (reviewsResult.error) {
+    throw new Error(reviewsResult.error.message);
   }
+  if (sandwichLocationResult.error) {
+    throw new Error(sandwichLocationResult.error.message);
+  }
+
+  const data = reviewsResult.data;
+  const locationBySandwichId = new Map(
+    sandwichLocationResult.data.map((item) => {
+      const location = [item.restaurant?.state, item.restaurant?.country].filter(Boolean).join(", ");
+      return [item.sandwich_id, location || "Unknown"];
+    })
+  );
 
   const average = data.length ? data.reduce((sum, row) => sum + row.rating, 0) / data.length : null;
   const favorite = data[0];
@@ -204,12 +220,13 @@ async function initializeAustinPage() {
           <tr>
             <td>${escapeHtml(row.sandwich_name)}</td>
             <td>${escapeHtml(row.restaurant_name)}</td>
+            <td>${escapeHtml(locationBySandwichId.get(row.sandwich_id) || "Unknown")}</td>
             <td>${row.take_out ? "Take-out" : "Dine-in"}</td>
             <td><strong>${row.rating}/10</strong></td>
           </tr>
         `)
         .join("")
-    : `<tr><td colspan="4" class="loading-cell">Austin has not reviewed any sandwiches yet.</td></tr>`;
+    : `<tr><td colspan="5" class="loading-cell">Austin has not reviewed any sandwiches yet.</td></tr>`;
 }
 
 async function initializeManagePage() {
