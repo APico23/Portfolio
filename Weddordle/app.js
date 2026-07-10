@@ -703,10 +703,11 @@ async function submitScore() {
     btn.textContent = "Submitted \u2713";
     document.getElementById("submitSection").classList.add("hidden");
     loadLeaderboard();
-  } catch {
+  } catch (err) {
     btn.disabled = false;
     btn.textContent = "Submit";
-    document.getElementById("leaderboardStatus").textContent = "Submission failed — please try again.";
+    document.getElementById("leaderboardStatus").textContent =
+      "Error: " + (err?.message || err?.error_description || JSON.stringify(err));
   }
 }
 
@@ -728,8 +729,8 @@ async function loadLeaderboard() {
     if (error) throw error;
     if (!data.length) { container.innerHTML = "<p class='lb-loading'>No scores yet \u2014 be first!</p>"; return; }
     renderLeaderboard(data);
-  } catch {
-    container.innerHTML = "<p class='lb-loading'>Could not load leaderboard.</p>";
+  } catch (err) {
+    container.innerHTML = "<p class='lb-loading'>Error: " + (err?.message || JSON.stringify(err)) + "</p>";
   }
 }
 
