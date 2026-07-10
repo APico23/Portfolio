@@ -1,6 +1,6 @@
 :root {
   --paper: #fff9f9;
-  --card: rgba(255, 255, 255, 0.9);
+  --card: rgba(255, 255, 255, 0.95);
   --ink: #2b1111;
   --muted: #6f4b4b;
   --accent: #d7263d;
@@ -25,17 +25,34 @@ body {
     repeating-conic-gradient(
       from 45deg,
       #fffefe 0deg 90deg,
-      #db2b3a 90deg 180deg,
+      #cf3140 90deg 180deg,
       #fffefe 180deg 270deg,
-      #db2b3a 270deg 360deg
+      #cf3140 270deg 360deg
     )
-    50% 50% / 64px 64px;
+    50% 50% / 72px 72px;
 }
 
 .page-shell {
   width: min(1180px, calc(100vw - 2rem));
   margin: 0 auto;
-  padding: 1.25rem 0 3rem;
+  padding: 1.25rem 1.1rem 3rem;
+  position: relative;
+}
+
+.page-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0.6rem 0 1rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.78));
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 30px;
+  box-shadow: 0 12px 40px rgba(65, 16, 24, 0.12);
+  z-index: 0;
+}
+
+.page-shell > * {
+  position: relative;
+  z-index: 1;
 }
 
 .topbar {
