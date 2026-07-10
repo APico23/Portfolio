@@ -1,14 +1,13 @@
 :root {
-  --paper: #f7f0e3;
-  --card: rgba(255, 252, 245, 0.84);
-  --ink: #231910;
-  --muted: #6d6258;
-  --accent: #cb5f2d;
-  --accent-deep: #8f3411;
-  --accent-soft: #f2bb75;
-  --leaf: #3e6b47;
-  --line: rgba(79, 44, 27, 0.14);
-  --shadow: 0 22px 55px rgba(58, 28, 14, 0.14);
+  --paper: #fff9f9;
+  --card: rgba(255, 255, 255, 0.9);
+  --ink: #2b1111;
+  --muted: #6f4b4b;
+  --accent: #d7263d;
+  --accent-deep: #8f1224;
+  --accent-soft: #ffd6db;
+  --line: rgba(143, 18, 36, 0.18);
+  --shadow: 0 20px 45px rgba(95, 18, 33, 0.16);
 }
 
 * {
@@ -18,12 +17,19 @@
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "Trebuchet MS", "Avenir Next", sans-serif;
+  font-family: "Trebuchet MS", "Franklin Gothic Medium", sans-serif;
   color: var(--ink);
   background:
-    radial-gradient(circle at top left, rgba(242, 187, 117, 0.75), transparent 28%),
-    radial-gradient(circle at top right, rgba(203, 95, 45, 0.22), transparent 30%),
-    linear-gradient(180deg, #fff8ef 0%, #f1e3ce 100%);
+    radial-gradient(circle at 12% 10%, rgba(215, 38, 61, 0.12), transparent 30%),
+    radial-gradient(circle at 88% 90%, rgba(143, 18, 36, 0.12), transparent 32%),
+    repeating-conic-gradient(
+      from 45deg,
+      #fffdfd 0deg 90deg,
+      #f8e9eb 90deg 180deg,
+      #fffdfd 180deg 270deg,
+      #f8e9eb 270deg 360deg
+    )
+    50% 50% / 68px 68px;
 }
 
 .page-shell {
@@ -58,6 +64,10 @@ body {
   text-decoration: none;
   color: var(--accent-deep);
   font-weight: 700;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.55rem 0.9rem;
 }
 
 .page-nav {
@@ -70,12 +80,12 @@ body {
 .nav-pill {
   text-decoration: none;
   color: var(--accent-deep);
-  background: rgba(255, 246, 235, 0.8);
-  border: 1px solid rgba(143, 52, 17, 0.18);
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--line);
   border-radius: 999px;
   padding: 0.75rem 1rem;
   font-weight: 800;
-  box-shadow: 0 6px 20px rgba(80, 37, 19, 0.08);
+  box-shadow: 0 6px 18px rgba(95, 18, 33, 0.12);
 }
 
 .nav-pill.is-active {
@@ -118,7 +128,7 @@ body {
   border: 1px solid var(--line);
   border-radius: 28px;
   box-shadow: var(--shadow);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(6px);
 }
 
 .hero-card {
@@ -208,7 +218,7 @@ th {
 }
 
 tbody tr:hover {
-  background: rgba(255, 250, 242, 0.75);
+  background: rgba(255, 236, 240, 0.75);
 }
 
 .sub-value {
@@ -243,7 +253,7 @@ button {
 input,
 select {
   width: 100%;
-  border: 1px solid rgba(90, 49, 29, 0.18);
+  border: 1px solid var(--line);
   border-radius: 16px;
   padding: 0.9rem 1rem;
   background: rgba(255, 255, 255, 0.9);
@@ -264,8 +274,8 @@ button {
   border: 0;
   border-radius: 999px;
   padding: 0.9rem 1.1rem;
-  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
-  color: #fff9f2;
+  background: linear-gradient(135deg, #f33c54, var(--accent-deep));
+  color: #fff8f8;
   font-weight: 900;
   cursor: pointer;
 }
