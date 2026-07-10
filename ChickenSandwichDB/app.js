@@ -387,8 +387,8 @@ function bindReviewForm() {
 async function refreshReviewPageData() {
   const [reviewersResult, sandwichesResult, reviewsResult] = await Promise.all([
     supabaseClient.from("reviewer").select("reviewer_id, first_name, last_name").order("first_name", { ascending: true }),
-    supabaseClient.from("chickensandwich").select("sandwich_id, name, restaurant:restaurant_id(name)").order("name", { ascending: true }),
-    supabaseClient.from("review_row_details").select("sandwich_id, reviewer_id, sandwich_name, restaurant_name, reviewer_name, rating").order("sandwich_name", { ascending: true })
+    supabaseClient.from("chickensandwich").select("sandwich_id, name, take_out, restaurant:restaurant_id(name)").order("name", { ascending: true }),
+    supabaseClient.from("review_row_details").select("sandwich_id, reviewer_id, sandwich_name, restaurant_name, reviewer_name, rating, take_out").order("sandwich_name", { ascending: true })
   ]);
 
   const firstError = [reviewersResult.error, sandwichesResult.error, reviewsResult.error].find(Boolean);
@@ -420,7 +420,7 @@ function renderSandwichOptions(sandwiches, selectId) {
   const select = document.getElementById(selectId);
   const currentValue = select.value;
   select.innerHTML = sandwiches
-    .map((sandwich) => `<option value="${sandwich.sandwich_id}">${escapeHtml(sandwich.name)} (${escapeHtml(sandwich.restaurant?.name || "Unknown")})</option>`)
+    .map((sandwich) => `<option value="${sandwich.sandwich_id}">${escapeHtml(sandwich.name)} (${escapeHtml(sandwich.restaurant?.name || "Unknown")} · ${sandwich.take_out ? "Take-out" : "Dine-in"})</option>`)
     .join("");
 
   if (currentValue && sandwiches.some((sandwich) => String(sandwich.sandwich_id) === currentValue)) {
@@ -441,12 +441,13 @@ function renderExistingReviews() {
           <tr>
             <td>${escapeHtml(review.sandwich_name)}</td>
             <td>${escapeHtml(review.restaurant_name)}</td>
+            <td>${review.take_out ? "Take-out" : "Dine-in"}</td>
             <td>${escapeHtml(review.reviewer_name)}</td>
             <td><strong>${review.rating}/10</strong></td>
           </tr>
         `)
         .join("")
-    : `<tr><td colspan="4" class="loading-cell">No reviews yet for this reviewer.</td></tr>`;
+    : `<tr><td colspan="5" class="loading-cell">No reviews yet for this reviewer.</td></tr>`;
 }
 
 function renderReviewSummary(reviews, reviewers, sandwiches) {

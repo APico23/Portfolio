@@ -76,14 +76,15 @@ function setLocalStatus(elementId, message, tone) {
 }
 
 function formatAverage(value) {
-  return value === null ? "No reviews" : value.toFixed(2);
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(2) : "No reviews";
 }
 
 function averageFromRatings(ratings) {
   if (!ratings.length) {
     return null;
   }
-  const total = ratings.reduce((sum, value) => sum + value, 0);
+  const total = ratings.reduce((sum, value) => sum + Number(value), 0);
   return total / ratings.length;
 }
 
@@ -184,14 +185,14 @@ async function initializeAustinPage() {
     throw new Error(error.message);
   }
 
-  const average = data.length ? data.reduce((sum, row) => sum + row.rating, 0) / data.length : null;
+  const averageRating = data.length ? data.reduce((sum, row) => sum + Number(row.rating), 0) / data.length : null;
   const favorite = data[0];
   const icedCount = data.filter((row) => row.iced).length;
 
   document.getElementById("austinReviewCount").textContent = String(data.length);
-  document.getElementById("austinAverage").textContent = formatAverage(average);
+  document.getElementById("austinAverage").textContent = formatAverage(averageRating);
   document.getElementById("austinIcedCount").textContent = String(icedCount);
-  document.getElementById("austinFavorite").textContent = favorite ? `${favorite.chai_name} (${favorite.rating}/10)` : "No reviews yet";
+  document.getElementById("austinFavorite").textContent = favorite ? `${favorite.chai_name} (${Number(favorite.rating).toFixed(1)}/10)` : "No reviews yet";
 
   tableBody.innerHTML = data.length
     ? data
@@ -201,7 +202,7 @@ async function initializeAustinPage() {
             <td>${escapeHtml(row.shop_name)}</td>
             <td>${escapeHtml([row.shop_state, row.shop_country].filter(Boolean).join(", "))}</td>
             <td>${row.iced ? "Iced" : "Hot"}</td>
-            <td><strong>${row.rating}/10</strong></td>
+            <td><strong>${Number(row.rating).toFixed(1)}/10</strong></td>
           </tr>
         `)
         .join("")
@@ -340,15 +341,17 @@ function bindReviewForm() {
     const chaiId = Number(chaiSelect.value);
     const rating = Number(ratingInput.value);
 
-    if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
-      setLocalStatus("reviewStatus", "Rating must be a whole number from 1 to 10.", "error");
+    if (!Number.isFinite(rating) || rating < 1 || rating > 10) {
+      setLocalStatus("reviewStatus", "Rating must be a number between 1.0 and 10.0.", "error");
       return;
     }
+
+    const normalizedRating = Math.round(rating * 10) / 10;
 
     setLocalStatus("reviewStatus", "Saving review...", "info");
     const { error } = await supabaseClient
       .from("chai_review")
-      .upsert({ chai_id: chaiId, reviewer_id: reviewerId, rating }, { onConflict: "chai_id,reviewer_id" });
+      .upsert({ chai_id: chaiId, reviewer_id: reviewerId, rating: normalizedRating }, { onConflict: "chai_id,reviewer_id" });
 
     if (error) {
       setLocalStatus("reviewStatus", error.message, "error");
@@ -359,15 +362,15 @@ function bindReviewForm() {
     await refreshReviewPageData();
     reviewerSelect.value = String(reviewerId);
     chaiSelect.value = String(chaiId);
-    ratingInput.value = String(rating);
+    ratingInput.value = normalizedRating.toFixed(1);
   });
 }
 
 async function refreshReviewPageData() {
   const [reviewersResult, chaiResult, reviewsResult] = await Promise.all([
     supabaseClient.from("chai_reviewer").select("reviewer_id, first_name, last_name").order("first_name", { ascending: true }),
-    supabaseClient.from("chai_item").select("chai_id, name, shop:shop_id(name)").order("name", { ascending: true }),
-    supabaseClient.from("chai_review_row_details").select("chai_id, reviewer_id, chai_name, shop_name, reviewer_name, rating").order("chai_name", { ascending: true })
+    supabaseClient.from("chai_item").select("chai_id, name, iced, shop:shop_id(name)").order("name", { ascending: true }),
+    supabaseClient.from("chai_review_row_details").select("chai_id, reviewer_id, chai_name, shop_name, reviewer_name, rating, iced").order("chai_name", { ascending: true })
   ]);
 
   const firstError = [reviewersResult.error, chaiResult.error, reviewsResult.error].find(Boolean);
@@ -399,7 +402,7 @@ function renderChaiOptions(chaiItems, selectId) {
   const select = document.getElementById(selectId);
   const currentValue = select.value;
   select.innerHTML = chaiItems
-    .map((item) => `<option value="${item.chai_id}">${escapeHtml(item.name)} (${escapeHtml(item.shop?.name || "Unknown")})</option>`)
+    .map((item) => `<option value="${item.chai_id}">${escapeHtml(item.name)} (${escapeHtml(item.shop?.name || "Unknown")} · ${item.iced ? "Iced" : "Hot"})</option>`)
     .join("");
 
   if (currentValue && chaiItems.some((item) => String(item.chai_id) === currentValue)) {
@@ -420,16 +423,17 @@ function renderExistingReviews() {
           <tr>
             <td>${escapeHtml(review.chai_name)}</td>
             <td>${escapeHtml(review.shop_name)}</td>
+            <td>${review.iced ? "Iced" : "Hot"}</td>
             <td>${escapeHtml(review.reviewer_name)}</td>
-            <td><strong>${review.rating}/10</strong></td>
+            <td><strong>${Number(review.rating).toFixed(1)}/10</strong></td>
           </tr>
         `)
         .join("")
-    : `<tr><td colspan="4" class="loading-cell">No reviews yet for this reviewer.</td></tr>`;
+    : `<tr><td colspan="5" class="loading-cell">No reviews yet for this reviewer.</td></tr>`;
 }
 
 function renderReviewSummary(reviews, reviewers, chaiItems) {
-  const average = reviews.length ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : null;
+  const average = reviews.length ? reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length : null;
   document.getElementById("reviewCoverage").textContent = `${reviews.length} saved review${reviews.length === 1 ? "" : "s"}`;
   document.getElementById("reviewReviewerCount").textContent = `${reviewers.length} reviewer${reviewers.length === 1 ? "" : "s"}`;
   document.getElementById("reviewChaiCount").textContent = `${chaiItems.length} chai item${chaiItems.length === 1 ? "" : "s"}`;
@@ -459,7 +463,7 @@ async function syncExistingReview() {
     return;
   }
 
-  ratingInput.value = data?.rating ? String(data.rating) : "7";
+  ratingInput.value = data?.rating ? Number(data.rating).toFixed(1) : "7.0";
   setLocalStatus(
     "reviewStatus",
     data?.rating ? "Existing score loaded. Submitting will update it." : "No score yet for this reviewer and chai.",
