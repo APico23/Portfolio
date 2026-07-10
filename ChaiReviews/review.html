@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Review Chai</title>
+    <link rel="stylesheet" href="styles.css?v=__ASSET_VERSION__" />
+  </head>
+  <body data-page="review">
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <h1>Review Existing Chai</h1>
+          <p>Select a reviewer, pick a chai item, and save a whole-number score from 1 to 10.</p>
+        </div>
+        <a class="home-link" href="../index.html">Back to home</a>
+      </header>
+
+      <nav class="page-nav">
+        <a class="nav-pill" data-nav="austin" href="austin.html">Delaine Pico's reviews</a>
+        <a class="nav-pill" data-nav="average" href="average-reviews.html">Average reviews</a>
+        <a class="nav-pill" data-nav="review" href="review.html">Review chai</a>
+        <a class="nav-pill" data-nav="manage" href="manage.html">Add data</a>
+      </nav>
+
+      <div id="globalStatus" class="status-banner" hidden></div>
+
+      <section class="stats-grid">
+        <article class="panel stat-card">
+          <span class="eyebrow">Coverage</span>
+          <div class="stat-value" id="reviewCoverage">-</div>
+        </article>
+        <article class="panel stat-card">
+          <span class="eyebrow">Reviewers</span>
+          <div class="stat-value" id="reviewReviewerCount">-</div>
+        </article>
+        <article class="panel stat-card">
+          <span class="eyebrow">Chai items</span>
+          <div class="stat-value" id="reviewChaiCount">-</div>
+        </article>
+        <article class="panel stat-card">
+          <span class="eyebrow">Average score</span>
+          <div class="stat-value" id="reviewAverage">-</div>
+        </article>
+      </section>
+
+      <section class="two-column">
+        <article class="form-panel">
+          <h2>Save a review</h2>
+          <form id="reviewForm">
+            <label>
+              Reviewer
+              <select id="reviewReviewerId" required></select>
+            </label>
+            <label>
+              Chai item
+              <select id="reviewChaiId" required></select>
+            </label>
+            <label>
+              Rating (1-10)
+              <input id="reviewRating" type="number" min="1" max="10" step="1" inputmode="numeric" value="7" required />
+            </label>
+            <button type="submit">Save review</button>
+          </form>
+          <div id="reviewStatus" class="inline-status" hidden></div>
+        </article>
+
+        <article class="table-panel">
+          <h2>Selected reviewer's rows</h2>
+          <p>This table updates to show only the reviewer selected on the left.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Chai</th>
+                <th>Shop</th>
+                <th>Reviewer</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody id="existingReviewTableBody"></tbody>
+          </table>
+        </article>
+      </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0/dist/umd/supabase.js"></script>
+    <script src="app.js?v=__ASSET_VERSION__"></script>
+  </body>
+</html>

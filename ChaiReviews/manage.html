@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Chai Data</title>
+    <link rel="stylesheet" href="styles.css?v=__ASSET_VERSION__" />
+  </head>
+  <body data-page="manage">
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <h1>Add New Chai Data</h1>
+          <p>Use these forms to add chai shops, reviewers, and chai items.</p>
+        </div>
+        <a class="home-link" href="../index.html">Back to home</a>
+      </header>
+
+      <nav class="page-nav">
+        <a class="nav-pill" data-nav="austin" href="austin.html">Delaine Pico's reviews</a>
+        <a class="nav-pill" data-nav="average" href="average-reviews.html">Average reviews</a>
+        <a class="nav-pill" data-nav="review" href="review.html">Review chai</a>
+        <a class="nav-pill" data-nav="manage" href="manage.html">Add data</a>
+      </nav>
+
+      <div id="globalStatus" class="status-banner" hidden></div>
+
+      <section class="manage-grid">
+        <article class="form-panel">
+          <h2>Add chai shop</h2>
+          <form id="shopForm">
+            <label>
+              Shop name
+              <input name="name" required />
+            </label>
+            <label>
+              State or region
+              <input name="state" required />
+            </label>
+            <label>
+              Country
+              <input name="country" required />
+            </label>
+            <button type="submit">Add shop</button>
+          </form>
+          <div id="shopStatus" class="inline-status" hidden></div>
+        </article>
+
+        <article class="form-panel">
+          <h2>Add reviewer</h2>
+          <form id="reviewerForm">
+            <label>
+              First name
+              <input name="firstName" required />
+            </label>
+            <label>
+              Last name
+              <input name="lastName" required />
+            </label>
+            <button type="submit">Add reviewer</button>
+          </form>
+          <div id="reviewerStatus" class="inline-status" hidden></div>
+        </article>
+
+        <article class="form-panel">
+          <h2>Add chai item</h2>
+          <form id="chaiForm">
+            <label>
+              Chai name
+              <input name="name" required />
+            </label>
+            <label>
+              Shop
+              <select id="chaiShopId" name="shopId" required></select>
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="iced" />
+              Served iced
+            </label>
+            <button type="submit">Add chai item</button>
+          </form>
+          <div id="chaiStatus" class="inline-status" hidden></div>
+        </article>
+      </section>
+
+      <section class="manage-grid">
+        <article class="list-panel">
+          <h2>Chai shops</h2>
+          <ul class="stack-list" id="shopList"></ul>
+        </article>
+        <article class="list-panel">
+          <h2>Reviewers</h2>
+          <ul class="stack-list" id="reviewerList"></ul>
+        </article>
+        <article class="list-panel">
+          <h2>Chai items</h2>
+          <ul class="stack-list" id="chaiList"></ul>
+        </article>
+      </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0/dist/umd/supabase.js"></script>
+    <script src="app.js?v=__ASSET_VERSION__"></script>
+  </body>
+</html>

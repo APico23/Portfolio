@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Delaine Pico's Chai Reviews</title>
+    <link rel="stylesheet" href="styles.css?v=__ASSET_VERSION__" />
+  </head>
+  <body data-page="austin">
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <h1>Delaine Pico's Chai Reviews</h1>
+          <p>A focused page for Delaine Pico's chai ratings, including shop location and serving temperature.</p>
+        </div>
+        <a class="home-link" href="../index.html">Back to home</a>
+      </header>
+
+      <nav class="page-nav">
+        <a class="nav-pill" data-nav="austin" href="austin.html">Delaine Pico's reviews</a>
+        <a class="nav-pill" data-nav="average" href="average-reviews.html">Average reviews</a>
+        <a class="nav-pill" data-nav="review" href="review.html">Review chai</a>
+        <a class="nav-pill" data-nav="manage" href="manage.html">Add data</a>
+      </nav>
+
+      <div id="globalStatus" class="status-banner" hidden></div>
+
+      <section class="stats-grid">
+        <article class="panel stat-card">
+          <span class="eyebrow">Delaine reviews</span>
+          <div class="stat-value" id="austinReviewCount">-</div>
+        </article>
+        <article class="panel stat-card">
+          <span class="eyebrow">Average score</span>
+          <div class="stat-value" id="austinAverage">-</div>
+        </article>
+        <article class="panel stat-card">
+          <span class="eyebrow">Iced picks</span>
+          <div class="stat-value" id="austinIcedCount">-</div>
+        </article>
+        <article class="panel stat-card">
+          <span class="eyebrow">Top-rated</span>
+          <div class="stat-value" id="austinFavorite">-</div>
+        </article>
+      </section>
+
+      <section class="table-panel">
+        <h2>Rating history</h2>
+        <p>Every chai item Delaine Pico has reviewed so far.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Chai</th>
+              <th>Shop</th>
+              <th>Location</th>
+              <th>Temp</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody id="austinTableBody"></tbody>
+        </table>
+      </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0/dist/umd/supabase.js"></script>
+    <script src="app.js?v=__ASSET_VERSION__"></script>
+  </body>
+</html>

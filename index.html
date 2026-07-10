@@ -96,6 +96,30 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.3);
       }
 
+      .bubble-checker {
+        color: #3a1017;
+        border-color: #ad2738;
+        background:
+          linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.72)),
+          repeating-conic-gradient(
+            from 45deg,
+            #ffffff 0deg 90deg,
+            #d93d4e 90deg 180deg,
+            #ffffff 180deg 270deg,
+            #d93d4e 270deg 360deg
+          )
+          50% 50% / 28px 28px;
+        box-shadow:
+          0 10px 24px rgba(160, 33, 50, 0.32),
+          inset 0 1px 0 rgba(255, 255, 255, 0.75);
+      }
+
+      .bubble-checker:hover {
+        box-shadow:
+          0 12px 26px rgba(160, 33, 50, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.75);
+      }
+
     </style>
   </head>
   <body>
@@ -107,7 +131,8 @@
       <div class="bubble-row">
         <a class="bubble" href="MenuCreator/planner.html#data">Menu Creator</a>
         <a class="bubble bubble-wedding" href="Weddordle/weddordle.html">Weddordle</a>
-        <a class="bubble" href="ChickenSandwichDB/austin.html">Chicken Sandwich DB</a>
+        <a class="bubble bubble-checker" href="ChickenSandwichDB/austin.html">Chicken Sandwich Reviews</a>
+        <a class="bubble" href="ChaiReviews/austin.html">Chai Reviews</a>
       </div>
     </main>
   </body>

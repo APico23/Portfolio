@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Average Chai Reviews</title>
+    <link rel="stylesheet" href="styles.css?v=__ASSET_VERSION__" />
+  </head>
+  <body data-page="average">
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <h1>Average Chai Reviews</h1>
+          <p>See all chai items with current average rating, shop, location, and serving temperature.</p>
+        </div>
+        <a class="home-link" href="../index.html">Back to home</a>
+      </header>
+
+      <nav class="page-nav">
+        <a class="nav-pill" data-nav="austin" href="austin.html">Delaine Pico's reviews</a>
+        <a class="nav-pill" data-nav="average" href="average-reviews.html">Average reviews</a>
+        <a class="nav-pill" data-nav="review" href="review.html">Review chai</a>
+        <a class="nav-pill" data-nav="manage" href="manage.html">Add data</a>
+      </nav>
+
+      <div id="globalStatus" class="status-banner" hidden></div>
+
+      <section class="hero-card">
+        <h2>Chai leaderboard</h2>
+        <p>Sorted by highest average score first.</p>
+      </section>
+
+      <section class="stats-grid">
+        <article class="panel stat-card">
+          <span class="eyebrow">Chai tracked</span>
+          <div class="stat-value" id="averageChaiCount">-</div>
+        </article>
+        <article class="panel stat-card">
+          <span class="eyebrow">Reviews saved</span>
+          <div class="stat-value" id="averageReviewCount">-</div>
+        </article>
+        <article class="panel stat-card">
+          <span class="eyebrow">Overall average</span>
+          <div class="stat-value" id="averageRating">-</div>
+        </article>
+        <article class="panel stat-card">
+          <span class="eyebrow">Current leader</span>
+          <div class="stat-value" id="averageLeader">-</div>
+        </article>
+      </section>
+
+      <section class="table-panel">
+        <h2>All chai items</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Chai</th>
+              <th>Shop</th>
+              <th>Location</th>
+              <th>Temp</th>
+              <th>Average score</th>
+            </tr>
+          </thead>
+          <tbody id="averageTableBody"></tbody>
+        </table>
+      </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0/dist/umd/supabase.js"></script>
+    <script src="app.js?v=__ASSET_VERSION__"></script>
+  </body>
+</html>
