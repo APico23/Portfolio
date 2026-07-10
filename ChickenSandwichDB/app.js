@@ -30,6 +30,11 @@ async function initializePage() {
     return;
   }
 
+  if (page === "average") {
+    await initializeMasterPage();
+    return;
+  }
+
   if (page === "manage") {
     await initializeManagePage();
     return;
@@ -323,6 +328,8 @@ async function initializeReviewPage() {
   await refreshReviewPageData();
 }
 
+let reviewPageRows = [];
+
 function bindReviewForm() {
   const reviewerSelect = document.getElementById("reviewReviewerId");
   const sandwichSelect = document.getElementById("reviewSandwichId");
@@ -336,6 +343,11 @@ function bindReviewForm() {
     const reviewerId = Number(reviewerSelect.value);
     const sandwichId = Number(sandwichSelect.value);
     const rating = Number(ratingInput.value);
+
+    if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
+      setLocalStatus("reviewStatus", "Rating must be a whole number from 1 to 10.", "error");
+      return;
+    }
 
     setLocalStatus("reviewStatus", "Saving review...", "info");
     const { error } = await supabaseClient
@@ -367,9 +379,10 @@ async function refreshReviewPageData() {
     throw new Error(firstError.message);
   }
 
+  reviewPageRows = reviewsResult.data;
   renderReviewerOptions(reviewersResult.data, "reviewReviewerId");
   renderSandwichOptions(sandwichesResult.data, "reviewSandwichId");
-  renderExistingReviews(reviewsResult.data);
+  renderExistingReviews();
   renderReviewSummary(reviewsResult.data, reviewersResult.data, sandwichesResult.data);
   await syncExistingReview();
 }
@@ -398,18 +411,25 @@ function renderSandwichOptions(sandwiches, selectId) {
   }
 }
 
-function renderExistingReviews(reviews) {
+function renderExistingReviews() {
+  const selectedReviewerId = Number(document.getElementById("reviewReviewerId")?.value);
   const tableBody = document.getElementById("existingReviewTableBody");
-  tableBody.innerHTML = reviews
-    .map((review) => `
-      <tr>
-        <td>${escapeHtml(review.sandwich_name)}</td>
-        <td>${escapeHtml(review.restaurant_name)}</td>
-        <td>${escapeHtml(review.reviewer_name)}</td>
-        <td><strong>${review.rating}/10</strong></td>
-      </tr>
-    `)
-    .join("");
+  const filteredReviews = selectedReviewerId
+    ? reviewPageRows.filter((review) => review.reviewer_id === selectedReviewerId)
+    : reviewPageRows;
+
+  tableBody.innerHTML = filteredReviews.length
+    ? filteredReviews
+        .map((review) => `
+          <tr>
+            <td>${escapeHtml(review.sandwich_name)}</td>
+            <td>${escapeHtml(review.restaurant_name)}</td>
+            <td>${escapeHtml(review.reviewer_name)}</td>
+            <td><strong>${review.rating}/10</strong></td>
+          </tr>
+        `)
+        .join("")
+    : `<tr><td colspan="4" class="loading-cell">No reviews yet for this reviewer.</td></tr>`;
 }
 
 function renderReviewSummary(reviews, reviewers, sandwiches) {
@@ -424,6 +444,8 @@ async function syncExistingReview() {
   const reviewerId = Number(document.getElementById("reviewReviewerId")?.value);
   const sandwichId = Number(document.getElementById("reviewSandwichId")?.value);
   const ratingInput = document.getElementById("reviewRating");
+
+  renderExistingReviews();
 
   if (!reviewerId || !sandwichId || !ratingInput) {
     return;

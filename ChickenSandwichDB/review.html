@@ -17,8 +17,8 @@
       </header>
 
       <nav class="page-nav">
-        <a class="nav-pill" data-nav="master" href="master.html">Master view</a>
         <a class="nav-pill" data-nav="austin" href="austin.html">Austin's reviews</a>
+        <a class="nav-pill" data-nav="average" href="average-reviews.html">Average reviews</a>
         <a class="nav-pill" data-nav="manage" href="manage.html">Add data</a>
         <a class="nav-pill" data-nav="review" href="review.html">Review sandwiches</a>
       </nav>
@@ -59,7 +59,7 @@
             </label>
             <label>
               Rating (1-10)
-              <input id="reviewRating" type="number" min="1" max="10" step="1" value="5" required />
+              <input id="reviewRating" type="number" min="1" max="10" step="1" inputmode="numeric" value="5" required />
             </label>
             <button type="submit">Save review</button>
           </form>
@@ -67,8 +67,8 @@
         </article>
 
         <article class="table-panel">
-          <h2>Current review rows</h2>
-          <p>Use this table to confirm what is already in Supabase.</p>
+          <h2>Selected reviewer's rows</h2>
+          <p>This table updates to show only the reviewer currently selected on the left.</p>
           <table>
             <thead>
               <tr>
