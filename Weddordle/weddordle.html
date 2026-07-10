@@ -7,13 +7,52 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
   <div class="bg-shape shape-1" aria-hidden="true"></div>
   <div class="bg-shape shape-2" aria-hidden="true"></div>
 
-  <main class="app">
+  <!-- Mode selection screen -->
+  <div id="screen-mode" class="screen-mode">
+    <div class="mode-flowers" aria-hidden="true">
+      <img src="flowers.png" alt="" class="mode-flower-img mode-flower-l" />
+      <img src="flowers.png" alt="" class="mode-flower-img mode-flower-r" />
+    </div>
+    <h1 class="mode-title">Weddordle</h1>
+    <p class="mode-subtitle">Choose your game</p>
+    <div class="mode-buttons">
+      <button id="challengeModeBtn" class="mode-btn mode-btn-challenge" type="button">
+        <span class="mode-btn-icon">💒</span>
+        <span class="mode-btn-label">Wedding Day Challenge</span>
+        <span class="mode-btn-desc">5 puzzles · timed · leaderboard</span>
+      </button>
+      <button id="endlessModeBtn" class="mode-btn mode-btn-endless" type="button">
+        <span class="mode-btn-icon">♾️</span>
+        <span class="mode-btn-label">Endless Mode</span>
+        <span class="mode-btn-desc">Random words · play anytime</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Results / leaderboard screen -->
+  <div id="screen-results" class="screen-results hidden">
+    <h2 class="results-title">Challenge Complete! 💍</h2>
+    <div id="resultsBreakdown"></div>
+    <div id="submitSection" class="submit-section">
+      <p class="submit-label">Enter your name to join the leaderboard:</p>
+      <div class="submit-row">
+        <input id="playerName" class="name-input" type="text" maxlength="30" placeholder="Your name" autocomplete="off" />
+        <button id="submitScoreBtn" class="solid-btn" type="button">Submit</button>
+      </div>
+      <p id="leaderboardStatus" class="lb-status"></p>
+    </div>
+    <h3 class="lb-heading">🏆 Leaderboard</h3>
+    <div id="leaderboardContainer"><p class="lb-loading">Loading…</p></div>
+    <button id="playAgainBtn" class="ghost-btn lb-back" type="button">← Back to Menu</button>
+  </div>
+
+  <main class="app hidden">
     <header class="topbar">
       <img src="flowers.png" alt="" class="flower flower-left" aria-hidden="true" />
       <h1>Weddordle</h1>
@@ -21,6 +60,13 @@
     </header>
     <div class="topbar-actions">
       <button id="helpBtn" class="ghost-btn" type="button">How To Play</button>
+      <button id="backToMenuBtn" class="ghost-btn" type="button">← Menu</button>
+    </div>
+
+    <div id="challenge-header" class="challenge-header hidden">
+      <span class="puzzle-label">Puzzle <span id="puzzleNum">1</span> of <span id="puzzleTotalNum">5</span></span>
+      <div id="progressDots" class="progress-dots"></div>
+      <span id="timerDisplay" class="timer-display">0:00.0</span>
     </div>
 
     <section class="status-wrap" aria-live="polite">
@@ -33,6 +79,7 @@
 
     <section class="actions">
       <button id="newGameBtn" type="button" class="solid-btn">New Game</button>
+      <button id="nextPuzzleBtn" type="button" class="solid-btn hidden">Next Puzzle →</button>
     </section>
   </main>
 
@@ -77,6 +124,7 @@
     <button id="closeInstructionsBtn" class="solid-btn" type="button">Start Playing</button>
   </dialog>
 
-  <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

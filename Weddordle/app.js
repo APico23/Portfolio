@@ -1,6 +1,18 @@
 const WORD_LENGTH = 5;
 const MAX_GUESSES = 6;
 
+// Supabase — the publishable key is intentionally public; security is
+// enforced by Row Level Security policies on the table.
+const SUPABASE_URL = "https://fupysqufnvblxyocqxey.supabase.co";
+const SUPABASE_KEY = "sb_publishable_BdHgtwQxbguQOgkAc9gNqg_8uLcLA8e";
+let supabaseClient = null;
+if (window.supabase) {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+
+// Wedding Day Challenge words — update these to change the puzzle set.
+const CHALLENGE_WORDS = ["bride", "groom", "hitch", "aisle", "jesus"];
+
 const boardEl = document.getElementById("board");
 const keyboardEl = document.getElementById("keyboard");
 const statusEl = document.getElementById("statusText");
@@ -25,6 +37,12 @@ let boardState = [];
 let gameOver = false;
 let animating = false;
 
+let gameMode = null;           // "endless" | "challenge"
+let challengePuzzleIndex = 0;
+let challengeResults = [];     // [{guesses, time, failed}]
+let challengeTimerInterval = null;
+let challengeElapsed = 0;
+
 const keyStateOrder = { unknown: 0, absent: 1, present: 2, correct: 3 };
 const keyStates = new Map();
 
@@ -37,16 +55,9 @@ async function init() {
   window.addEventListener("resize", sizeTiles);
   wireEvents();
 
-  // Start a game immediately with fallback words so the board is ready.
-  startNewGame();
+  // Show mode selection first; game starts when user picks a mode.
+  showModeScreen();
 
-  // Show instructions after the board is set up.
-  if (typeof instructionsDialog.showModal === "function") {
-    instructionsDialog.showModal();
-  }
-
-  // Load word lists in the background; updates dictionary/answers for
-  // subsequent games without touching the already-started game.
   await loadWordLists();
 }
 
@@ -164,6 +175,13 @@ function wireEvents() {
   });
 
   closeInstructionsBtn.addEventListener("click", () => instructionsDialog.close());
+
+  document.getElementById("challengeModeBtn").addEventListener("click", startChallengeMode);
+  document.getElementById("endlessModeBtn").addEventListener("click", startEndlessMode);
+  document.getElementById("nextPuzzleBtn").addEventListener("click", advanceChallengePuzzle);
+  document.getElementById("backToMenuBtn").addEventListener("click", showModeScreen);
+  document.getElementById("submitScoreBtn").addEventListener("click", submitScore);
+  document.getElementById("playAgainBtn").addEventListener("click", showModeScreen);
 }
 
 function startNewGame() {
@@ -193,6 +211,7 @@ function startNewGame() {
   });
 
   statusEl.textContent = "Guess the wedding word in 6 tries.";
+  newGameBtn.classList.add("hidden");
 }
 
 function onPhysicalKey(event) {
@@ -285,6 +304,12 @@ function submitGuess() {
       statusEl.textContent = "You got it! 💍";
       bounceRow(rowIndex);
       launchCelebration();
+      if (gameMode === "challenge") {
+        clearInterval(challengeTimerInterval);
+        setTimeout(() => finishChallengePuzzle(false), 2200);
+      } else {
+        newGameBtn.classList.remove("hidden");
+      }
       return;
     }
 
@@ -292,6 +317,12 @@ function submitGuess() {
       gameOver = true;
       animating = false;
       statusEl.textContent = `Out of tries. The word was ${targetWord.toUpperCase()}.`;
+      if (gameMode === "challenge") {
+        clearInterval(challengeTimerInterval);
+        setTimeout(() => finishChallengePuzzle(true), 1600);
+      } else {
+        newGameBtn.classList.remove("hidden");
+      }
       return;
     }
 
@@ -488,4 +519,252 @@ function launchCelebration() {
     document.body.appendChild(el);
     el.addEventListener("animationend", () => el.remove(), { once: true });
   }
+}
+
+// ── Mode selection ────────────────────────────────────────────────────────
+
+function showModeScreen() {
+  clearInterval(challengeTimerInterval);
+  document.getElementById("screen-mode").classList.remove("hidden");
+  document.querySelector(".app").classList.add("hidden");
+  document.getElementById("screen-results").classList.add("hidden");
+}
+
+function startEndlessMode() {
+  gameMode = "endless";
+  document.getElementById("screen-mode").classList.add("hidden");
+  document.querySelector(".app").classList.remove("hidden");
+  document.getElementById("challenge-header").classList.add("hidden");
+  newGameBtn.classList.remove("hidden");
+  document.getElementById("nextPuzzleBtn").classList.add("hidden");
+  if (typeof instructionsDialog.showModal === "function") {
+    instructionsDialog.showModal();
+  }
+  startNewGame();
+}
+
+function startChallengeMode() {
+  gameMode = "challenge";
+  challengePuzzleIndex = 0;
+  challengeResults = [];
+  document.getElementById("screen-mode").classList.add("hidden");
+  document.querySelector(".app").classList.remove("hidden");
+  document.getElementById("challenge-header").classList.remove("hidden");
+  newGameBtn.classList.add("hidden");
+  document.getElementById("nextPuzzleBtn").classList.add("hidden");
+  startChallengePuzzle(0);
+}
+
+// ── Challenge puzzles ─────────────────────────────────────────────────────
+
+function startChallengePuzzle(index) {
+  targetWord = CHALLENGE_WORDS[index];
+  rowIndex = 0;
+  colIndex = 0;
+  gameOver = false;
+  animating = false;
+  keyStates.clear();
+
+  boardState = Array.from({ length: MAX_GUESSES }, () =>
+    Array.from({ length: WORD_LENGTH }, () => "")
+  );
+
+  document.querySelectorAll(".tile").forEach((t) => { t.textContent = ""; t.className = "tile"; });
+  document.querySelectorAll(".key").forEach((k) => k.classList.remove("correct", "present", "absent"));
+
+  document.getElementById("puzzleNum").textContent = index + 1;
+  document.getElementById("puzzleTotalNum").textContent = CHALLENGE_WORDS.length;
+  updateProgressDots(index);
+
+  statusEl.textContent = `Puzzle ${index + 1} of ${CHALLENGE_WORDS.length} — guess the word!`;
+  sizeTiles();
+
+  challengeElapsed = 0;
+  updateTimerDisplay(0);
+  clearInterval(challengeTimerInterval);
+  challengeTimerInterval = setInterval(() => {
+    challengeElapsed = Math.round((challengeElapsed + 0.1) * 10) / 10;
+    updateTimerDisplay(challengeElapsed);
+  }, 100);
+}
+
+function updateTimerDisplay(s) {
+  const m   = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  const t   = Math.floor((s * 10) % 10);
+  document.getElementById("timerDisplay").textContent =
+    `${m}:${String(sec).padStart(2, "0")}.${t}`;
+}
+
+function updateProgressDots(currentIndex) {
+  const container = document.getElementById("progressDots");
+  container.innerHTML = "";
+  CHALLENGE_WORDS.forEach((_, i) => {
+    const dot = document.createElement("span");
+    dot.className = "progress-dot";
+    if (i < currentIndex) {
+      dot.classList.add(challengeResults[i].failed ? "dot-failed" : "dot-done");
+    } else if (i === currentIndex) {
+      dot.classList.add("dot-active");
+    }
+    container.appendChild(dot);
+  });
+}
+
+function finishChallengePuzzle(failed) {
+  clearInterval(challengeTimerInterval);
+  const time = Math.round(challengeElapsed * 10) / 10;
+  challengeResults.push({ guesses: failed ? 6 : rowIndex + 1, time, failed });
+
+  const isLast = challengePuzzleIndex === CHALLENGE_WORDS.length - 1;
+  if (isLast) {
+    setTimeout(showResultsScreen, 1800);
+  } else {
+    document.getElementById("nextPuzzleBtn").classList.remove("hidden");
+  }
+}
+
+function advanceChallengePuzzle() {
+  document.getElementById("nextPuzzleBtn").classList.add("hidden");
+  challengePuzzleIndex += 1;
+  startChallengePuzzle(challengePuzzleIndex);
+}
+
+// ── Results & leaderboard ─────────────────────────────────────────────────
+
+function showResultsScreen() {
+  document.querySelector(".app").classList.add("hidden");
+  document.getElementById("screen-results").classList.remove("hidden");
+
+  const hasFails     = challengeResults.some((r) => r.failed);
+  const totalGuesses = challengeResults.reduce((s, r) => s + (r.failed ? 7 : r.guesses), 0);
+  const totalTime    = challengeResults.reduce((s, r) => s + r.time, 0);
+
+  let html = `<table class="results-table"><thead><tr>
+    <th>#</th><th>Word</th><th>Guesses</th><th>Time</th>
+  </tr></thead><tbody>`;
+  challengeResults.forEach((r, i) => {
+    html += `<tr>
+      <td>${i + 1}</td>
+      <td>${CHALLENGE_WORDS[i].toUpperCase()}</td>
+      <td class="${r.failed ? "cell-fail" : ""}">${r.failed ? "FAIL" : r.guesses}</td>
+      <td>${r.failed ? "\u2014" : r.time.toFixed(1) + "s"}</td>
+    </tr>`;
+  });
+  html += `<tr class="results-total">
+    <td colspan="2"><strong>Total</strong></td>
+    <td class="${hasFails ? "cell-fail" : ""}"><strong>${hasFails ? "DNF" : totalGuesses}</strong></td>
+    <td><strong>${totalTime.toFixed(1)}s</strong></td>
+  </tr></tbody></table>`;
+
+  const bd = document.getElementById("resultsBreakdown");
+  bd.innerHTML = html;
+  bd.dataset.totalGuesses = totalGuesses;
+  bd.dataset.totalTime    = totalTime.toFixed(1);
+  bd.dataset.hasFails     = hasFails;
+
+  document.getElementById("submitSection").classList.remove("hidden");
+  document.getElementById("submitScoreBtn").disabled = false;
+  document.getElementById("submitScoreBtn").textContent = "Submit";
+  document.getElementById("leaderboardStatus").textContent = "";
+  document.getElementById("playerName").value = "";
+  loadLeaderboard();
+}
+
+async function submitScore() {
+  const nameEl = document.getElementById("playerName");
+  const name   = nameEl.value.trim();
+  if (!name) { nameEl.focus(); return; }
+  if (!supabaseClient) {
+    document.getElementById("leaderboardStatus").textContent = "Leaderboard unavailable offline.";
+    return;
+  }
+
+  const bd          = document.getElementById("resultsBreakdown");
+  const totalGuesses = parseInt(bd.dataset.totalGuesses);
+  const totalTime    = parseFloat(bd.dataset.totalTime);
+  const hasFails     = bd.dataset.hasFails === "true";
+
+  const btn = document.getElementById("submitScoreBtn");
+  btn.disabled = true;
+  btn.textContent = "Submitting\u2026";
+
+  try {
+    const { error } = await supabaseClient
+      .from("challenge_scores")
+      .insert({
+        player_name:   escHtml(name),
+        scores:        challengeResults,
+        total_guesses: totalGuesses,
+        total_time:    totalTime,
+        has_fails:     hasFails
+      });
+    if (error) throw error;
+    btn.textContent = "Submitted \u2713";
+    document.getElementById("submitSection").classList.add("hidden");
+    loadLeaderboard();
+  } catch {
+    btn.disabled = false;
+    btn.textContent = "Submit";
+    document.getElementById("leaderboardStatus").textContent = "Submission failed — please try again.";
+  }
+}
+
+async function loadLeaderboard() {
+  const container = document.getElementById("leaderboardContainer");
+  if (!supabaseClient) {
+    container.innerHTML = "<p class='lb-loading'>Leaderboard requires an internet connection.</p>";
+    return;
+  }
+  container.innerHTML = "<p class='lb-loading'>Loading\u2026</p>";
+  try {
+    const { data, error } = await supabaseClient
+      .from("challenge_scores")
+      .select("*")
+      .order("has_fails",      { ascending: true })
+      .order("total_guesses",  { ascending: true })
+      .order("total_time",     { ascending: true })
+      .limit(20);
+    if (error) throw error;
+    if (!data.length) { container.innerHTML = "<p class='lb-loading'>No scores yet \u2014 be first!</p>"; return; }
+    renderLeaderboard(data);
+  } catch {
+    container.innerHTML = "<p class='lb-loading'>Could not load leaderboard.</p>";
+  }
+}
+
+function renderLeaderboard(rows) {
+  const n = CHALLENGE_WORDS.length;
+  let html = `<table class="leaderboard-table"><thead><tr>
+    <th>#</th><th>Name</th>`;
+  for (let i = 1; i <= n; i++) html += `<th>P${i}</th>`;
+  html += `<th>Total</th></tr></thead><tbody>`;
+
+  rows.forEach((row, rank) => {
+    const scores = Array.isArray(row.scores) ? row.scores : [];
+    html += `<tr${rank === 0 ? " class=\"lb-top\"" : ""}>
+      <td>${rank + 1}</td>
+      <td class="lb-name">${escHtml(row.player_name)}</td>`;
+    for (let i = 0; i < n; i++) {
+      const s = scores[i];
+      if (!s) html += `<td>\u2014</td>`;
+      else if (s.failed) html += `<td class="cell-fail">FAIL</td>`;
+      else html += `<td>${s.guesses}G<br><span class="lb-time">${Number(s.time).toFixed(1)}s</span></td>`;
+    }
+    const total = row.has_fails
+      ? `<span class="cell-fail">DNF</span>`
+      : `${row.total_guesses}G\u00a0/\u00a0${Number(row.total_time).toFixed(1)}s`;
+    html += `<td>${total}</td></tr>`;
+  });
+
+  html += `</tbody></table>`;
+  document.getElementById("leaderboardContainer").innerHTML = html;
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

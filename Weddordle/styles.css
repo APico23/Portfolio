@@ -16,6 +16,12 @@
   box-sizing: border-box;
 }
 
+button, .tile, .key {
+  touch-action: manipulation;
+}
+
+.hidden { display: none !important; }
+
 body {
   margin: 0;
   height: 100dvh;
@@ -455,3 +461,237 @@ h1 {
   animation: dove-fly var(--dur, 1.2s) ease-out forwards;
   animation-delay: var(--delay, 0ms);
 }
+
+/* ── Mode selection screen ─────────────────────────────────── */
+
+.screen-mode {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(155deg, var(--bg-top), var(--bg-bottom));
+  z-index: 50;
+  padding: 1.5rem 1rem;
+  gap: 0.4rem;
+}
+
+.screen-mode.hidden { display: none !important; }
+
+.mode-flowers {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.2rem;
+}
+
+.mode-flower-img {
+  width: clamp(60px, 16vw, 100px);
+  height: auto;
+}
+
+.mode-flower-r { transform: scaleX(-1); }
+
+.mode-title {
+  margin: 0;
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(2.4rem, 7vw, 3.6rem);
+  letter-spacing: 0.07em;
+  color: var(--accent);
+}
+
+.mode-subtitle {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.mode-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: min(94vw, 420px);
+}
+
+.mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  border: none;
+  border-radius: 16px;
+  padding: 1.1rem 1.4rem;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.mode-btn:hover { transform: translateY(-2px); }
+
+.mode-btn-icon  { font-size: 1.8rem; line-height: 1; }
+.mode-btn-label { font-family: "Cormorant Garamond", serif; font-size: 1.45rem; font-weight: 700; color: var(--ink); }
+.mode-btn-desc  { font-size: 0.78rem; font-weight: 700; opacity: 0.7; color: var(--ink); }
+
+.mode-btn-challenge {
+  background: linear-gradient(145deg, #c8e4f6, #a0ceee);
+  box-shadow: 0 6px 20px rgba(74, 143, 206, 0.28);
+}
+
+.mode-btn-endless {
+  background: linear-gradient(145deg, #e8f0e0, #cde4c0);
+  box-shadow: 0 6px 20px rgba(78, 134, 32, 0.18);
+}
+
+/* ── Challenge header (in-game) ───────────────────────────── */
+
+.challenge-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  flex-shrink: 0;
+}
+
+.puzzle-label {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.progress-dots { display: flex; gap: 6px; }
+
+.progress-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #a0b8cc;
+  background: transparent;
+}
+
+.progress-dot.dot-active {
+  border-color: var(--accent);
+  background: var(--accent);
+  animation: pulse-dot 1s ease-in-out infinite;
+}
+
+.progress-dot.dot-done   { border-color: var(--correct); background: var(--correct); }
+.progress-dot.dot-failed { border-color: #c0392b;        background: #c0392b; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+.timer-display {
+  font-family: "Courier New", monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 5ch;
+  text-align: right;
+}
+
+/* ── Results & leaderboard screen ─────────────────────────── */
+
+.screen-results {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(155deg, var(--bg-top), var(--bg-bottom));
+  z-index: 50;
+  overflow-y: auto;
+  padding: 1.5rem 1rem 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.results-title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  color: var(--accent);
+  margin: 0 0 0.8rem;
+  text-align: center;
+}
+
+.results-table {
+  border-collapse: collapse;
+  width: min(94vw, 460px);
+  margin-bottom: 1rem;
+  background: rgba(255,255,255,0.7);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(26,52,72,0.1);
+}
+
+.results-table th,
+.results-table td {
+  padding: 0.45rem 0.7rem;
+  border-bottom: 1px solid #cde4f4;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.results-table th { background: var(--key-bg); color: var(--muted); font-size: 0.78rem; }
+.results-total td { background: rgba(74,143,206,0.07); }
+.cell-fail { color: #c0392b; font-weight: 800; }
+
+.submit-section {
+  width: min(94vw, 460px);
+  margin-bottom: 1.2rem;
+  text-align: center;
+}
+
+.submit-label { margin: 0 0 0.5rem; font-weight: 700; color: var(--muted); font-size: 0.9rem; }
+
+.submit-row { display: flex; gap: 0.5rem; justify-content: center; }
+
+.name-input {
+  border: 2px solid #92c4e4;
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: #fff;
+  flex: 1;
+  max-width: 220px;
+  outline: none;
+}
+
+.name-input:focus { border-color: var(--accent); }
+.lb-status { margin: 0.4rem 0 0; font-size: 0.82rem; color: #c0392b; min-height: 1rem; }
+
+.lb-heading {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.6rem;
+  margin: 0 0 0.6rem;
+  color: var(--accent);
+  text-align: center;
+}
+
+#leaderboardContainer { width: min(94vw, 600px); }
+
+.leaderboard-table {
+  border-collapse: collapse;
+  width: 100%;
+  background: rgba(255,255,255,0.8);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(26,52,72,0.1);
+  font-size: 0.8rem;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  padding: 0.38rem 0.5rem;
+  border-bottom: 1px solid #cde4f4;
+  text-align: center;
+}
+
+.leaderboard-table th { background: var(--key-bg); color: var(--muted); font-size: 0.72rem; }
+.lb-top td { background: rgba(74,143,206,0.1); font-weight: 800; }
+.lb-name { text-align: left; font-weight: 700; }
+.lb-time { font-size: 0.7rem; opacity: 0.75; }
+.lb-loading { color: var(--muted); font-style: italic; }
+.lb-back { margin-top: 1.2rem; }
