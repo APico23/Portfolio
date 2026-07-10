@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weddordle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-shape shape-1" aria-hidden="true"></div>
+  <div class="bg-shape shape-2" aria-hidden="true"></div>
+
+  <main class="app">
+    <header class="topbar">
+      <img src="flowers.png" alt="" class="flower flower-left" aria-hidden="true" />
+      <h1>Weddordle</h1>
+      <img src="flowers.png" alt="" class="flower flower-right" aria-hidden="true" />
+    </header>
+    <div class="topbar-actions">
+      <button id="helpBtn" class="ghost-btn" type="button">How To Play</button>
+    </div>
+
+    <section class="status-wrap" aria-live="polite">
+      <p id="statusText">Guess the wedding word in 6 tries.</p>
+    </section>
+
+    <section id="board" class="board" aria-label="Wordle board"></section>
+
+    <section id="keyboard" class="keyboard" aria-label="On-screen keyboard"></section>
+
+    <section class="actions">
+      <button id="newGameBtn" type="button" class="solid-btn">New Game</button>
+    </section>
+  </main>
+
+  <dialog id="instructionsDialog" class="modal">
+    <img src="flowers.png" alt="" class="modal-flower" aria-hidden="true" />
+    <h2>How To Play</h2>
+    <p>Guess the wedding word in 6 tries.</p>
+    <ul class="rules-list">
+      <li>Each guess must be a valid 5-letter word.</li>
+      <li>Tile colors reveal how close your guess was.</li>
+    </ul>
+    <hr class="modal-divider" />
+    <p class="examples-label"><strong>Examples</strong></p>
+
+    <div class="ex-row">
+      <span class="ex-tile ex-correct">P</span>
+      <span class="ex-tile">I</span>
+      <span class="ex-tile">C</span>
+      <span class="ex-tile">O</span>
+      <span class="ex-tile">S</span>
+    </div>
+    <p class="ex-desc"><strong>P</strong> is in the word and in the correct spot.</p>
+
+    <div class="ex-row">
+      <span class="ex-tile">B</span>
+      <span class="ex-tile">R</span>
+      <span class="ex-tile ex-present">I</span>
+      <span class="ex-tile">D</span>
+      <span class="ex-tile">E</span>
+    </div>
+    <p class="ex-desc"><strong>I</strong> is in the word but in the wrong spot.</p>
+
+    <div class="ex-row">
+      <span class="ex-tile ex-absent">F</span>
+      <span class="ex-tile">L</span>
+      <span class="ex-tile">A</span>
+      <span class="ex-tile">M</span>
+      <span class="ex-tile">E</span>
+    </div>
+    <p class="ex-desc"><strong>F</strong> is not in the word in any spot.</p>
+
+    <button id="closeInstructionsBtn" class="solid-btn" type="button">Start Playing</button>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>

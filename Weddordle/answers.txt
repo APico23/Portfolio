@@ -1,0 +1,10 @@
+aisle
+altar
+bloom
+bride
+dance
+groom
+heart
+music
+party
+toast
