@@ -77,7 +77,15 @@ function setLocalStatus(elementId, message, tone) {
 
 function formatAverage(value) {
   const numeric = Number(value);
-  return Number.isFinite(numeric) ? numeric.toFixed(2) : "No reviews";
+  return Number.isFinite(numeric) ? formatRating(numeric, 3) : "No reviews";
+}
+
+function formatRating(value, maxDecimals = 3) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return "";
+  }
+  return Number(numeric.toFixed(maxDecimals)).toString();
 }
 
 function averageFromRatings(ratings) {
@@ -192,7 +200,7 @@ async function initializeAustinPage() {
   document.getElementById("austinReviewCount").textContent = String(data.length);
   document.getElementById("austinAverage").textContent = formatAverage(averageRating);
   document.getElementById("austinIcedCount").textContent = String(icedCount);
-  document.getElementById("austinFavorite").textContent = favorite ? `${favorite.chai_name} (${Number(favorite.rating).toFixed(1)}/10)` : "No reviews yet";
+  document.getElementById("austinFavorite").textContent = favorite ? `${favorite.chai_name} (${formatRating(favorite.rating)}/10)` : "No reviews yet";
 
   tableBody.innerHTML = data.length
     ? data
@@ -202,7 +210,7 @@ async function initializeAustinPage() {
             <td>${escapeHtml(row.shop_name)}</td>
             <td>${escapeHtml([row.shop_state, row.shop_country].filter(Boolean).join(", "))}</td>
             <td>${row.iced ? "Iced" : "Hot"}</td>
-            <td><strong>${Number(row.rating).toFixed(1)}/10</strong></td>
+            <td><strong>${formatRating(row.rating)}/10</strong></td>
           </tr>
         `)
         .join("")
@@ -342,11 +350,11 @@ function bindReviewForm() {
     const rating = Number(ratingInput.value);
 
     if (!Number.isFinite(rating) || rating < 1 || rating > 10) {
-      setLocalStatus("reviewStatus", "Rating must be a number between 1.0 and 10.0.", "error");
+      setLocalStatus("reviewStatus", "Rating must be a number between 1 and 10 (up to 3 decimals).", "error");
       return;
     }
 
-    const normalizedRating = Math.round(rating * 10) / 10;
+    const normalizedRating = Math.round(rating * 1000) / 1000;
 
     setLocalStatus("reviewStatus", "Saving review...", "info");
     const { error } = await supabaseClient
@@ -362,7 +370,7 @@ function bindReviewForm() {
     await refreshReviewPageData();
     reviewerSelect.value = String(reviewerId);
     chaiSelect.value = String(chaiId);
-    ratingInput.value = normalizedRating.toFixed(1);
+    ratingInput.value = formatRating(normalizedRating);
   });
 }
 
@@ -425,7 +433,7 @@ function renderExistingReviews() {
             <td>${escapeHtml(review.shop_name)}</td>
             <td>${review.iced ? "Iced" : "Hot"}</td>
             <td>${escapeHtml(review.reviewer_name)}</td>
-            <td><strong>${Number(review.rating).toFixed(1)}/10</strong></td>
+            <td><strong>${formatRating(review.rating)}/10</strong></td>
           </tr>
         `)
         .join("")
@@ -463,7 +471,7 @@ async function syncExistingReview() {
     return;
   }
 
-  ratingInput.value = data?.rating ? Number(data.rating).toFixed(1) : "7.0";
+  ratingInput.value = data?.rating ? formatRating(data.rating) : "7";
   setLocalStatus(
     "reviewStatus",
     data?.rating ? "Existing score loaded. Submitting will update it." : "No score yet for this reviewer and chai.",

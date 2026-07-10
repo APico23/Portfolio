@@ -11,7 +11,7 @@
       <header class="topbar">
         <div class="brand-block">
           <h1>Review Existing Chai</h1>
-          <p>Select a reviewer, pick a chai item, and save a score from 1.0 to 10.0.</p>
+          <p>Select a reviewer, pick a chai item, and save a score from 1 to 10 (up to 3 decimals).</p>
         </div>
         <a class="home-link" href="../index.html">Back to home</a>
       </header>
@@ -57,8 +57,8 @@
               <select id="reviewChaiId" required></select>
             </label>
             <label>
-              Rating (1.0-10.0)
-              <input id="reviewRating" type="number" min="1" max="10" step="0.1" inputmode="decimal" value="7.0" required />
+              Rating (1-10, up to 3 decimals)
+              <input id="reviewRating" type="number" min="1" max="10" step="0.001" inputmode="decimal" value="7" required />
             </label>
             <button type="submit">Save review</button>
           </form>
