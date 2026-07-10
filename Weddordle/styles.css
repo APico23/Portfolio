@@ -542,6 +542,11 @@ h1 {
   box-shadow: 0 6px 20px rgba(78, 134, 32, 0.18);
 }
 
+.mode-back-main {
+  margin-top: 1rem;
+  text-decoration: none;
+}
+
 /* ── Challenge header (in-game) ───────────────────────────── */
 
 .challenge-header {
