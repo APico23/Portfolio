@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Weddordle</title>
+  <meta name="theme-color" content="#eaf4fb" />
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet" />
@@ -33,6 +35,11 @@
         <span class="mode-btn-desc">Random words · play anytime</span>
       </button>
     </div>
+    <section class="mode-leaderboard">
+      <h2 class="lb-heading">🏆 Leaderboard</h2>
+      <div class="lb-scroll" data-leaderboard><p class="lb-loading">Loading…</p></div>
+    </section>
+
     <a href="../index.html" class="ghost-btn mode-back-main">← Back to Main Menu</a>
   </div>
 
@@ -49,7 +56,7 @@
       <p id="leaderboardStatus" class="lb-status"></p>
     </div>
     <h3 class="lb-heading">🏆 Leaderboard</h3>
-    <div id="leaderboardContainer"><p class="lb-loading">Loading…</p></div>
+    <div id="leaderboardContainer" class="lb-scroll" data-leaderboard><p class="lb-loading">Loading…</p></div>
     <button id="playAgainBtn" class="ghost-btn lb-back" type="button">← Back to Menu</button>
   </div>
 

@@ -498,6 +498,10 @@ h1 {
   font-size: clamp(2.4rem, 7vw, 3.6rem);
   letter-spacing: 0.07em;
   color: var(--accent);
+  /* The global `h1 { flex: 1 }` is meant for the in-game topbar, a flex row.
+     This h1 sits in a flex column, where flex-grow makes it swallow the free
+     height and open a gap below the title. */
+  flex: none;
 }
 
 .mode-subtitle {
@@ -700,3 +704,94 @@ h1 {
 .lb-time { font-size: 0.7rem; opacity: 0.75; }
 .lb-loading { color: var(--muted); font-style: italic; }
 .lb-back { margin-top: 1.2rem; }
+
+/* ── Accessibility ─────────────────────────────── */
+/* Additions only — nothing here changes the look for a mouse user. */
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 1rem == 16px, below which iOS Safari zooms the page on focus. */
+.name-input {
+  font-size: 1rem;
+}
+
+.name-input:focus-visible {
+  border-color: var(--accent);
+  outline-offset: 0;
+}
+
+/* Only the two ambient background loops calm down, and only for visitors who
+   asked their OS for reduced motion. Every game animation — tile flips, pops,
+   row shake, the winning bounce, confetti, doves — always plays. */
+@media (prefers-reduced-motion: reduce) {
+  .bg-shape,
+  .progress-dot.dot-active {
+    animation: none;
+  }
+}
+
+/* ── Leaderboard on the menu ───────────────────── */
+
+/* The menu now carries the board, so it has to survive short viewports.
+   Auto margins keep the group centred when there is room and let it scroll
+   when there is not — `justify-content: center` alone would make the
+   overflowing top edge unreachable. */
+.screen-mode {
+  justify-content: flex-start;
+  overflow-y: auto;
+}
+
+.screen-mode > :first-child { margin-top: auto; }
+.screen-mode > :last-child  { margin-bottom: auto; }
+
+/* Without this, flex-shrink squashes these boxes while their contents keep
+   their size, and the back link paints on top of the leaderboard. */
+.screen-mode > * {
+  flex-shrink: 0;
+}
+
+.mode-leaderboard {
+  width: min(94vw, 600px);
+  margin-top: 1.4rem;
+}
+
+.mode-leaderboard .lb-heading {
+  margin: 0 0 0.5rem;
+  font-size: 1.3rem;
+}
+
+/* Scrolls both ways: down through every entry, across on narrow screens
+   where the per-puzzle columns do not fit. */
+.lb-scroll {
+  max-height: min(38vh, 20rem);
+  overflow: auto;
+  border: 1px solid #b8d4e8;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 4px 14px rgba(26, 52, 72, 0.1);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* The wrapper draws the frame now. */
+.lb-scroll .leaderboard-table {
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  overflow: visible;
+}
+
+/* Header stays put while the names scroll under it. */
+.lb-scroll .leaderboard-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.lb-scroll .lb-loading {
+  margin: 0;
+  padding: 1rem;
+  text-align: center;
+}

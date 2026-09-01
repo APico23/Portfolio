@@ -13,6 +13,10 @@ if (window.supabase) {
 // Wedding Day Challenge words — update these to change the puzzle set.
 const CHALLENGE_WORDS = ["bride", "groom", "hitch", "aisle", "jesus"];
 
+// The leaderboard scrolls, so this only exists to bound a runaway query.
+// Raise it if the board ever gets close.
+const LEADERBOARD_LIMIT = 500;
+
 const boardEl = document.getElementById("board");
 const keyboardEl = document.getElementById("keyboard");
 const statusEl = document.getElementById("statusText");
@@ -528,6 +532,7 @@ function showModeScreen() {
   document.getElementById("screen-mode").classList.remove("hidden");
   document.querySelector(".app").classList.add("hidden");
   document.getElementById("screen-results").classList.add("hidden");
+  loadLeaderboard();
 }
 
 function startEndlessMode() {
@@ -537,6 +542,10 @@ function startEndlessMode() {
   document.getElementById("challenge-header").classList.add("hidden");
   newGameBtn.classList.remove("hidden");
   document.getElementById("nextPuzzleBtn").classList.add("hidden");
+  // init() sized the tiles while .app was still display:none, so every child
+  // measured zero and the board capped at its max. Re-measure now that the
+  // real layout exists (challenge mode already does this per puzzle).
+  sizeTiles();
   if (typeof instructionsDialog.showModal === "function") {
     instructionsDialog.showModal();
   }
@@ -693,7 +702,9 @@ async function submitScore() {
     const { error } = await supabaseClient
       .from("challenge_scores")
       .insert({
-        player_name:   escHtml(name),
+        // Stored raw and escaped at render time in renderLeaderboard();
+        // escaping here too was double-encoding & < > in names.
+        player_name:   name,
         scores:        challengeResults,
         total_guesses: totalGuesses,
         total_time:    totalTime,
@@ -711,13 +722,20 @@ async function submitScore() {
   }
 }
 
+// The menu screen and the results screen both show the board, so one fetch
+// fills every [data-leaderboard] container.
+function setLeaderboardHtml(html) {
+  document.querySelectorAll("[data-leaderboard]").forEach((el) => {
+    el.innerHTML = html;
+  });
+}
+
 async function loadLeaderboard() {
-  const container = document.getElementById("leaderboardContainer");
   if (!supabaseClient) {
-    container.innerHTML = "<p class='lb-loading'>Leaderboard requires an internet connection.</p>";
+    setLeaderboardHtml("<p class='lb-loading'>Leaderboard requires an internet connection.</p>");
     return;
   }
-  container.innerHTML = "<p class='lb-loading'>Loading\u2026</p>";
+  setLeaderboardHtml("<p class='lb-loading'>Loading\u2026</p>");
   try {
     const { data, error } = await supabaseClient
       .from("challenge_scores")
@@ -725,12 +743,12 @@ async function loadLeaderboard() {
       .order("has_fails",      { ascending: true })
       .order("total_guesses",  { ascending: true })
       .order("total_time",     { ascending: true })
-      .limit(20);
+      .limit(LEADERBOARD_LIMIT);
     if (error) throw error;
-    if (!data.length) { container.innerHTML = "<p class='lb-loading'>No scores yet \u2014 be first!</p>"; return; }
+    if (!data.length) { setLeaderboardHtml("<p class='lb-loading'>No scores yet \u2014 be first!</p>"); return; }
     renderLeaderboard(data);
   } catch (err) {
-    container.innerHTML = "<p class='lb-loading'>Error: " + (err?.message || JSON.stringify(err)) + "</p>";
+    setLeaderboardHtml("<p class='lb-loading'>Error: " + (err?.message || JSON.stringify(err)) + "</p>");
   }
 }
 
@@ -759,7 +777,7 @@ function renderLeaderboard(rows) {
   });
 
   html += `</tbody></table>`;
-  document.getElementById("leaderboardContainer").innerHTML = html;
+  setLeaderboardHtml(html);
 }
 
 function escHtml(str) {

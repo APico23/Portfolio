@@ -1,104 +1,154 @@
+/* ═══════════════════════════════════════════════════════
+   Dinner Menu Planner — kitchen planner
+   Graph paper, slab serif, gold and blue kept because they
+   encode meaning: gold = eat-out night, blue = new recipe.
+   ═══════════════════════════════════════════════════════ */
+
 :root {
-  --off-white: #f7f4ea;
-  --panel: #fffef8;
-  --text: #1f2a36;
+  --paper: #f7f4ea;
+  --card: #fffef9;
+  --ink: #1f2a36;
+  --ink-soft: #3d4c5c;
   --muted: #5f6b7a;
+  --line: rgba(31, 42, 54, 0.14);
+  --line-strong: rgba(31, 42, 54, 0.26);
+
   --gold: #e6bc49;
-  --gold-deep: #cf9f26;
+  --gold-deep: #a67f10;
+  --gold-wash: #fdf3d6;
   --blue: #2f6ca3;
-  --blue-soft: #d9e8f5;
+  --blue-deep: #1f4f7c;
+  --blue-wash: #e6f0f8;
   --danger: #a93434;
-  --radius: 14px;
-  --shadow: 0 8px 24px rgba(37, 53, 71, 0.08);
+
+  --font-display: "Bitter", Georgia, "Times New Roman", serif;
+  --font-body: "Karla", "Segoe UI", system-ui, sans-serif;
+
+  --pad: clamp(1rem, 4vw, 2.5rem);
+  --shell: 86rem;
+  --radius: 10px;
+  --radius-sm: 7px;
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* The app toggles the `hidden` attribute on buttons and hints, so it has to
+   beat any display value set below. */
+[hidden] {
+  display: none !important;
 }
 
 body {
   margin: 0;
-  color: var(--text);
-  background:
-    radial-gradient(circle at 0% 0%, #f3e7be 0%, transparent 45%),
-    radial-gradient(circle at 100% 10%, #d8e7f6 0%, transparent 30%),
-    var(--off-white);
-  font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+  min-height: 100dvh;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--ink);
+  background-color: var(--paper);
+  /* Graph paper — this is a planning tool, so it sits on planning paper. */
+  background-image:
+    linear-gradient(rgba(31, 42, 54, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 42, 54, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-attachment: fixed;
+}
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
 }
 
 .app-shell {
-  max-width: 1280px;
+  width: 100%;
+  max-width: var(--shell);
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 0 var(--pad) clamp(2.5rem, 6vw, 4rem);
 }
+
+/* ── Masthead ───────────────────────────────────────── */
 
 .hero {
   display: flex;
+  align-items: end;
   justify-content: space-between;
-  gap: 1rem;
-  background: linear-gradient(130deg, #fff7dd, #f6fbff);
-  border: 1px solid #ecdfbb;
-  border-radius: var(--radius);
-  padding: 1rem 1.2rem;
-  box-shadow: var(--shadow);
+  gap: 1.25rem 2rem;
+  flex-wrap: wrap;
+  padding: clamp(1.75rem, 4vw, 2.75rem) 0 clamp(1.25rem, 3vw, 1.75rem);
+  border-bottom: 3px double var(--line-strong);
+  margin-bottom: clamp(1.25rem, 3vw, 1.75rem);
 }
 
 .hero h1 {
   margin: 0;
-  font-size: 1.9rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 4.5vw, 2.6rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 .hero p {
-  margin: 0.25rem 0 0;
+  margin: 0.5rem 0 0;
+  max-width: 46ch;
   color: var(--muted);
+  font-size: 0.94rem;
+  text-wrap: pretty;
 }
 
 .hero-actions {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
-.import-label {
-  position: relative;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--blue-soft);
-  border: 1px solid #acc6df;
-  color: #1c4f7e;
-  padding: 0.5rem 0.7rem;
-  border-radius: 10px;
-  font-weight: 600;
-  min-height: 39px;
-  transition: transform 120ms ease, filter 120ms ease;
-}
-
-.import-label:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.02);
-}
-
-.import-label input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
+/* ── View tabs ──────────────────────────────────────── */
 
 .view-switch {
-  margin-top: 1rem;
   display: flex;
-  gap: 0.6rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
+  margin-bottom: clamp(1.5rem, 4vw, 2.25rem);
 }
 
-.view-switch button.active {
-  background: #f7df95;
-  border-color: #ddb245;
-  color: #47330a;
+/* Scoped to nav.view-switch so these outrank `button.secondary`, which the
+   markup also puts on these two buttons. */
+nav.view-switch button {
+  min-height: 44px;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  transition: background-color 180ms ease, border-color 180ms ease,
+    color 180ms ease;
+}
+
+nav.view-switch button:hover {
+  background: rgba(31, 42, 54, 0.05);
+  border-color: var(--ink-soft);
+  color: var(--ink);
+  transform: none;
+}
+
+nav.view-switch button.active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--card);
 }
 
 .app-view {
@@ -109,115 +159,229 @@ body {
   display: block;
 }
 
+/* ── Layout ─────────────────────────────────────────── */
+
 .layout {
-  margin-top: 1.2rem;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.25rem;
+  counter-reset: step;
 }
 
 .panel {
-  background: var(--panel);
-  border: 1px solid #ece5cf;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--gold);
   border-radius: var(--radius);
-  padding: 1rem;
-  box-shadow: var(--shadow);
+  padding: clamp(1.1rem, 2.5vw, 1.5rem);
+  box-shadow: 0 2px 0 rgba(31, 42, 54, 0.05);
+}
+
+.layout > .panel {
+  counter-increment: step;
 }
 
 h2 {
-  margin-top: 0;
+  margin: 0 0 0.25rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
+
+/* Numbered steps — the three data panels are a workflow, so they read as one. */
+.layout > .panel h2::before {
+  content: counter(step, decimal-leading-zero);
+  display: block;
+  margin-bottom: 0.45rem;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--gold-deep);
+}
+
+/* ── Forms ──────────────────────────────────────────── */
 
 .stack {
   display: grid;
-  gap: 0.6rem;
+  gap: 0.85rem;
+  margin-top: 1.1rem;
 }
 
 .form-actions {
   display: flex;
-  gap: 0.55rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
+  margin-top: 0.15rem;
 }
 
 label {
   display: grid;
-  gap: 0.3rem;
-  font-size: 0.94rem;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink-soft);
 }
 
 input,
 select,
 textarea,
 button {
-  font: inherit;
+  font-family: inherit;
 }
 
 input,
 select,
 textarea {
-  border: 1px solid #ced6df;
-  border-radius: 10px;
-  padding: 0.45rem 0.55rem;
+  width: 100%;
+  min-height: 42px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   background: #fff;
+  color: var(--ink);
+  /* 16px keeps iOS Safari from zooming on focus. */
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
+textarea {
+  resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(47, 108, 163, 0.16);
+}
+
+input[type="date"] {
+  min-width: 9rem;
+}
+
+/* ── Buttons ────────────────────────────────────────── */
+
 button {
-  cursor: pointer;
-  border: 1px solid #d8af3f;
+  min-height: 42px;
+  padding: 0.55rem 1.1rem;
+  border: 1px solid var(--gold-deep);
+  border-radius: var(--radius-sm);
   background: var(--gold);
   color: #3a2a08;
+  font-size: 0.88rem;
   font-weight: 700;
-  border-radius: 10px;
-  padding: 0.5rem 0.8rem;
-  transition: transform 120ms ease, filter 120ms ease;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 180ms ease, border-color 180ms ease,
+    color 180ms ease, transform 120ms ease;
 }
 
 button:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.02);
+  background: #f0cb63;
+}
+
+button:active {
+  transform: translateY(1px);
 }
 
 button.secondary {
-  background: var(--blue-soft);
-  border-color: #a8c4df;
-  color: #194a76;
+  background: transparent;
+  border-color: var(--line-strong);
+  color: var(--ink-soft);
+}
+
+button.secondary:hover {
+  background: rgba(31, 42, 54, 0.05);
+  border-color: var(--ink-soft);
+  color: var(--ink);
 }
 
 button.danger {
-  background: #f6dddd;
-  border-color: #e8b4b4;
+  background: transparent;
+  border-color: rgba(169, 52, 52, 0.4);
   color: var(--danger);
+}
+
+button.danger:hover {
+  background: rgba(169, 52, 52, 0.08);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.import-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0.55rem 1.1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+
+.import-label:hover {
+  background: rgba(31, 42, 54, 0.05);
+  border-color: var(--ink-soft);
+  color: var(--ink);
+}
+
+.import-label:focus-within {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.import-label input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .hint {
   margin: 0;
   color: var(--muted);
-  font-size: 0.86rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
 }
+
+/* ── Record lists ───────────────────────────────────── */
 
 .card-list {
   list-style: none;
-  margin: 0.8rem 0 0;
+  margin: 1.1rem 0 0;
   padding: 0;
-  display: grid;
-  gap: 0.5rem;
-  max-height: 240px;
-  overflow: auto;
+  max-height: 17rem;
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
 }
 
 .card-list.compact {
-  max-height: 180px;
+  max-height: 13rem;
 }
 
 .card-list li {
-  border: 1px solid #e8dcc0;
-  background: #fffdf5;
-  border-radius: 10px;
-  padding: 0.55rem 0.6rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.6rem;
+  padding: 0.65rem 0.15rem;
+  border-bottom: 1px solid var(--line);
+  transition: background-color 160ms ease;
 }
 
 .card-list li.selectable {
@@ -225,111 +389,215 @@ button.danger {
 }
 
 .card-list li.selectable:hover {
-  border-color: #d8af3f;
-  box-shadow: inset 0 0 0 1px #eed896;
+  background: var(--gold-wash);
+}
+
+.card-list li button {
+  min-height: 32px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.76rem;
 }
 
 .card-main {
   display: grid;
-  gap: 0.2rem;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.card-main strong {
+  font-family: var(--font-display);
+  font-size: 0.94rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .card-main small {
   color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
+/* ── Planner ────────────────────────────────────────── */
+
 .planner-panel {
-  margin-top: 1.2rem;
+  margin-top: 0;
+  border-top-color: var(--blue);
 }
 
 .planner-controls {
   display: grid;
-  gap: 0.7rem;
+  gap: 0.9rem;
 }
 
 .control-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.7rem;
+  gap: 0.8rem;
   align-items: end;
+  padding: 1rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--blue-wash);
+}
+
+.control-row label {
+  flex: 0 1 9rem;
+}
+
+.control-row button {
+  border-color: var(--blue-deep);
+  background: var(--blue);
+  color: #f4f9fd;
+}
+
+.control-row button:hover {
+  background: var(--blue-deep);
 }
 
 .calendar-wrap {
-  margin-top: 1rem;
+  margin-top: 1.5rem;
+  overflow-x: auto;
 }
 
 .calendar-header,
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0.45rem;
+  gap: 0.4rem;
+  min-width: 26rem;
+}
+
+.calendar-header {
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--line-strong);
 }
 
 .calendar-header span {
   text-align: center;
-  font-size: 0.84rem;
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--muted);
 }
 
 .day-cell {
-  min-height: 105px;
-  border: 1px solid #dce6f1;
-  background: #fcfeff;
-  border-radius: 12px;
+  min-height: 7rem;
   padding: 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
   display: grid;
   align-content: space-between;
   gap: 0.35rem;
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
   animation: fadeIn 180ms ease;
 }
 
+.day-cell:hover {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(47, 108, 163, 0.14);
+}
+
 .day-cell.empty {
-  background: #f8f6ef;
-  border-color: #efe8d6;
+  background: transparent;
+  border-style: dashed;
+  cursor: default;
+}
+
+.day-cell.empty:hover {
+  border-color: var(--line);
+  box-shadow: none;
 }
 
 .day-top {
   display: flex;
   justify-content: space-between;
-  font-size: 0.82rem;
+  align-items: baseline;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.day-top strong {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 
 .day-meal {
-  font-size: 0.86rem;
-  border-radius: 8px;
-  border: 1px solid #d9e7f4;
-  background: #f2f8fd;
-  padding: 0.3rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 5px;
+  border-left: 3px solid var(--line-strong);
+  background: rgba(31, 42, 54, 0.04);
+  font-size: 0.79rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
+/* Gold = eat-out / special night. */
 .day-meal.special {
-  background: #fff6dd;
-  border-color: #efd183;
+  border-left-color: var(--gold);
+  background: var(--gold-wash);
 }
 
+/* Blue = new recipe night. */
 .day-meal.new-recipe {
-  background: #eaf5ff;
-  border-color: #88b6de;
-  color: #124a77;
+  border-left-color: var(--blue);
+  background: var(--blue-wash);
+  color: var(--blue-deep);
   font-weight: 700;
 }
 
+/* ── Dialog ─────────────────────────────────────────── */
+
 dialog {
-  border: none;
-  border-radius: 14px;
-  box-shadow: var(--shadow);
-  max-width: 560px;
-  width: min(95vw, 560px);
+  width: min(94vw, 34rem);
+  max-width: 34rem;
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  border: 1px solid var(--line-strong);
+  border-top: 4px solid var(--gold);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 20px 50px rgba(31, 42, 54, 0.22);
 }
 
 dialog::backdrop {
-  background: rgba(17, 31, 48, 0.35);
+  background: rgba(31, 42, 54, 0.45);
+}
+
+dialog h3 {
+  margin: 0 0 0.85rem;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+dialog p {
+  margin: 0 0 0.5rem;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+dialog p:empty {
+  display: none;
 }
 
 .dialog-actions {
   display: flex;
   gap: 0.6rem;
-  margin-top: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
 }
 
 @keyframes fadeIn {
@@ -339,30 +607,59 @@ dialog::backdrop {
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
-@media (max-width: 1100px) {
+/* ── Responsive ─────────────────────────────────────── */
+
+@media (max-width: 68rem) {
   .layout {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 760px) {
-  .app-shell {
-    padding: 0.8rem;
-  }
-
-  .hero {
-    flex-direction: column;
-  }
-
+@media (max-width: 46rem) {
   .layout {
     grid-template-columns: 1fr;
   }
 
+  .hero {
+    align-items: start;
+  }
+
+  .hero-actions {
+    width: 100%;
+  }
+
+  .hero-actions button,
+  .import-label {
+    flex: 1 1 auto;
+  }
+
+  nav.view-switch button {
+    flex: 1 1 auto;
+  }
+
   .day-cell {
-    min-height: 85px;
+    min-height: 5rem;
+    padding: 0.35rem;
+  }
+
+  .day-meal {
+    font-size: 0.7rem;
+  }
+
+  .day-top strong {
+    font-size: 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
