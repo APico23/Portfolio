@@ -10,7 +10,9 @@ const libraryState = {
   activeFilter: "all",
   session: null,
   isAdmin: false,
-  manageBound: false
+  manageBound: false,
+  rankingSortable: null,
+  rankingSaving: false
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -288,6 +290,9 @@ function getRankedBooks() {
 }
 
 function renderRankingPage() {
+  libraryState.rankingSortable?.destroy();
+  libraryState.rankingSortable = null;
+
   const rankedBooks = getRankedBooks();
   setText(
     "rankingCount",
@@ -295,7 +300,9 @@ function renderRankingPage() {
   );
 
   const context = document.getElementById("rankingAdminContext");
-  context.textContent = libraryState.isAdmin ? "Editing enabled" : "Public view";
+  context.textContent = libraryState.rankingSaving
+    ? "Saving order..."
+    : libraryState.isAdmin ? "Editing enabled" : "Public view";
   context.classList.toggle("is-admin", libraryState.isAdmin);
 
   const list = document.getElementById("rankingList");
@@ -309,6 +316,8 @@ function renderRankingPage() {
   const fragment = document.createDocumentFragment();
   rankedBooks.forEach((book, index) => {
     const row = createElement("li", "ranking-row");
+    row.dataset.bookId = book.book_id;
+    row.append(createBookRankPosition(index, book));
     row.append(createBookCover(book, "rank-cover", "rank-cover-fallback"));
 
     const details = createElement("div", "rank-book");
@@ -330,41 +339,140 @@ function renderRankingPage() {
     fragment.append(row);
   });
   list.append(fragment);
+  initializeBookRankingDrag();
+}
+
+function createBookRankPosition(index, book) {
+  const position = createElement("div", "rank-position");
+  position.append(createElement("strong", "rank-number", index + 1));
+
+  if (libraryState.isAdmin) {
+    const handle = createElement("button", "rank-drag-handle", "\u2195");
+    handle.type = "button";
+    handle.disabled = libraryState.rankingSaving;
+    handle.title = `Drag ${book.title} to a new rank`;
+    handle.setAttribute("aria-label", handle.title);
+    position.append(handle);
+  }
+  return position;
 }
 
 function createRankControls(book, index, total) {
   const controls = createElement("div", "rank-controls");
-  const upButton = createElement("button", "rank-button", "↑");
-  const downButton = createElement("button", "rank-button", "↓");
+  const stepControls = createElement("div", "rank-step-controls");
+  const upButton = createElement("button", "rank-button", "\u2191");
+  const downButton = createElement("button", "rank-button", "\u2193");
 
   upButton.type = "button";
   downButton.type = "button";
-  upButton.disabled = index === 0;
-  downButton.disabled = index === total - 1;
+  upButton.disabled = libraryState.rankingSaving || index === 0;
+  downButton.disabled = libraryState.rankingSaving || index === total - 1;
   upButton.title = `Move ${book.title} up`;
   downButton.title = `Move ${book.title} down`;
   upButton.setAttribute("aria-label", upButton.title);
   downButton.setAttribute("aria-label", downButton.title);
-  upButton.addEventListener("click", () => moveRankedBook(book.book_id, "up"));
-  downButton.addEventListener("click", () => moveRankedBook(book.book_id, "down"));
+  upButton.addEventListener("click", () => setRankedBookPosition(book.book_id, index));
+  downButton.addEventListener("click", () => setRankedBookPosition(book.book_id, index + 2));
+  stepControls.append(upButton, downButton);
 
-  controls.append(upButton, downButton);
+  const rankForm = createElement("form", "rank-jump-form");
+  const rankLabel = createElement("label", "rank-jump-label", "Rank");
+  const rankInput = createElement("input", "rank-jump-input");
+  rankInput.type = "number";
+  rankInput.inputMode = "numeric";
+  rankInput.min = "1";
+  rankInput.max = String(total);
+  rankInput.value = String(index + 1);
+  rankInput.disabled = libraryState.rankingSaving;
+  rankInput.setAttribute("aria-label", `New rank for ${book.title}`);
+  rankInput.addEventListener("focus", () => rankInput.select());
+  rankLabel.append(rankInput);
+
+  const rankSubmit = createElement("button", "rank-jump-button", "Go");
+  rankSubmit.type = "submit";
+  rankSubmit.disabled = libraryState.rankingSaving;
+  rankSubmit.setAttribute("aria-label", `Move ${book.title} to entered rank`);
+  rankForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    setRankedBookPosition(book.book_id, Number(rankInput.value));
+  });
+  rankForm.append(rankLabel, rankSubmit);
+
+  controls.append(stepControls, rankForm);
   return controls;
 }
 
-async function moveRankedBook(bookId, direction) {
-  setGlobalStatus("Updating book order...", "info");
-  const { error } = await supabaseClient.rpc("move_library_book", {
+function initializeBookRankingDrag() {
+  if (!libraryState.isAdmin || libraryState.rankingSaving || !window.Sortable) {
+    return;
+  }
+
+  libraryState.rankingSortable = window.Sortable.create(document.getElementById("rankingList"), {
+    animation: 150,
+    handle: ".rank-drag-handle",
+    draggable: ".ranking-row",
+    ghostClass: "is-dragging",
+    chosenClass: "is-drag-chosen",
+    forceFallback: true,
+    fallbackOnBody: true,
+    fallbackTolerance: 3,
+    swapThreshold: 0.65,
+    onEnd(event) {
+      if (event.oldIndex === event.newIndex) {
+        return;
+      }
+      const bookId = event.item.dataset.bookId;
+      window.setTimeout(() => setRankedBookPosition(bookId, event.newIndex + 1), 0);
+    }
+  });
+}
+
+async function setRankedBookPosition(bookId, requestedPosition) {
+  if (libraryState.rankingSaving) {
+    return;
+  }
+
+  const rankedBooks = getRankedBooks();
+  const currentIndex = rankedBooks.findIndex((book) => book.book_id === bookId);
+  const numericPosition = Math.trunc(Number(requestedPosition));
+  if (currentIndex < 0 || !Number.isFinite(numericPosition)) {
+    renderRankingPage();
+    return;
+  }
+
+  const targetIndex = Math.min(Math.max(numericPosition - 1, 0), rankedBooks.length - 1);
+  if (currentIndex === targetIndex) {
+    renderRankingPage();
+    return;
+  }
+
+  const previousRanks = new Map(rankedBooks.map((book) => [book.book_id, book.rank_position]));
+  const [movedBook] = rankedBooks.splice(currentIndex, 1);
+  rankedBooks.splice(targetIndex, 0, movedBook);
+  rankedBooks.forEach((book, index) => {
+    book.rank_position = index + 1;
+  });
+
+  libraryState.rankingSaving = true;
+  renderRankingPage();
+  setGlobalStatus(`Moving ${movedBook.title} to rank ${targetIndex + 1}...`, "info");
+
+  const { error } = await supabaseClient.rpc("set_library_book_rank", {
     p_book_id: bookId,
-    p_direction: direction
+    p_target_position: targetIndex + 1
   });
 
   if (error) {
+    rankedBooks.forEach((book) => {
+      book.rank_position = previousRanks.get(book.book_id);
+    });
+    libraryState.rankingSaving = false;
+    renderRankingPage();
     setGlobalStatus(error.message, "error");
     return;
   }
 
-  await loadBooks();
+  libraryState.rankingSaving = false;
   renderRankingPage();
   hideGlobalStatus();
 }

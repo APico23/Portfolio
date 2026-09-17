@@ -579,7 +579,7 @@ button:disabled {
 
 .ranking-row {
   display: grid;
-  grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+  grid-template-columns: 3rem 3.5rem minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
   min-height: 6.25rem;
@@ -593,6 +593,49 @@ button:disabled {
 
 .ranking-row:first-child {
   background: linear-gradient(90deg, rgba(180, 58, 39, 0.08), transparent 72%);
+}
+
+.ranking-row.is-drag-chosen {
+  background: #f5eee4;
+}
+
+.ranking-row.is-dragging {
+  opacity: 0.35;
+}
+
+.rank-position {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+}
+
+.rank-number {
+  color: var(--forest);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+.rank-drag-handle {
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-color: var(--line-strong);
+  color: var(--forest);
+  background: var(--surface-strong);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+}
+
+.rank-drag-handle:hover {
+  border-color: var(--forest);
+  color: #ffffff;
+  background: var(--forest);
+}
+
+.rank-drag-handle:active {
+  cursor: grabbing;
 }
 
 .rank-cover,
@@ -640,12 +683,20 @@ button:disabled {
 }
 
 .rank-controls {
+  display: flex;
+  align-items: end;
+  justify-content: end;
+  gap: 0.5rem;
+}
+
+.rank-step-controls {
   display: grid;
   grid-template-columns: repeat(2, 42px);
   gap: 0.35rem;
 }
 
-.rank-button {
+.rank-button,
+.rank-jump-button {
   width: 42px;
   min-height: 42px;
   padding: 0;
@@ -655,10 +706,34 @@ button:disabled {
   font-size: 1.05rem;
 }
 
-.rank-button:hover {
+.rank-button:hover,
+.rank-jump-button:hover {
   border-color: var(--forest);
   color: #ffffff;
   background: var(--forest);
+}
+
+.rank-jump-form {
+  display: grid;
+  grid-template-columns: 3.6rem 42px;
+  align-items: end;
+  gap: 0.35rem;
+}
+
+.rank-jump-label {
+  display: grid;
+  gap: 0.15rem;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.rank-jump-input {
+  width: 3.6rem;
+  min-height: 42px;
+  padding: 0.35rem;
+  text-align: center;
 }
 
 .auth-panel,
@@ -867,11 +942,11 @@ legend {
   }
 
   .ranking-row {
-    grid-template-columns: 3rem minmax(0, 1fr);
+    grid-template-columns: 2.5rem 3rem minmax(0, 1fr);
   }
 
   .rank-controls {
-    grid-column: 2;
+    grid-column: 2 / 4;
     justify-self: start;
   }
 

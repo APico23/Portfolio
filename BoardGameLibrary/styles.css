@@ -840,7 +840,7 @@ button:disabled {
 
 .ranking-row {
   display: grid;
-  grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+  grid-template-columns: 3rem 4.5rem minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
   min-height: 6.25rem;
@@ -854,6 +854,50 @@ button:disabled {
 
 .ranking-row:first-child {
   background: linear-gradient(90deg, rgba(241, 200, 75, 0.2), transparent 72%);
+}
+
+.ranking-row.is-drag-chosen {
+  background: #fff8da;
+}
+
+.ranking-row.is-dragging {
+  opacity: 0.35;
+}
+
+.rank-position {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+}
+
+.rank-number {
+  color: var(--teal-dark);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 400;
+}
+
+.rank-drag-handle {
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-color: var(--line-strong);
+  color: var(--teal-dark);
+  background: var(--surface-strong);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+}
+
+.rank-drag-handle:hover {
+  border-color: var(--teal);
+  color: #ffffff;
+  background: var(--teal);
+}
+
+.rank-drag-handle:active {
+  cursor: grabbing;
 }
 
 .rank-game-image,
@@ -901,12 +945,20 @@ button:disabled {
 }
 
 .rank-controls {
+  display: flex;
+  align-items: end;
+  justify-content: end;
+  gap: 0.5rem;
+}
+
+.rank-step-controls {
   display: grid;
   grid-template-columns: repeat(2, 42px);
   gap: 0.35rem;
 }
 
-.rank-button {
+.rank-button,
+.rank-jump-button {
   width: 42px;
   min-height: 42px;
   padding: 0;
@@ -916,10 +968,34 @@ button:disabled {
   font-size: 1.05rem;
 }
 
-.rank-button:hover {
+.rank-button:hover,
+.rank-jump-button:hover {
   border-color: var(--teal);
   color: #ffffff;
   background: var(--teal);
+}
+
+.rank-jump-form {
+  display: grid;
+  grid-template-columns: 3.6rem 42px;
+  align-items: end;
+  gap: 0.35rem;
+}
+
+.rank-jump-label {
+  display: grid;
+  gap: 0.15rem;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.rank-jump-input {
+  width: 3.6rem;
+  min-height: 42px;
+  padding: 0.35rem;
+  text-align: center;
 }
 
 .admin-context {
@@ -1493,7 +1569,7 @@ button:disabled {
   }
 
   .ranking-row {
-    grid-template-columns: 3.5rem minmax(0, 1fr);
+    grid-template-columns: 2.5rem 3.5rem minmax(0, 1fr);
   }
 
   .rank-game-image,
@@ -1502,7 +1578,7 @@ button:disabled {
   }
 
   .rank-controls {
-    grid-column: 2;
+    grid-column: 2 / 4;
     justify-self: start;
   }
 }

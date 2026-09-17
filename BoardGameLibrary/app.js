@@ -16,7 +16,9 @@ const gameState = {
   session: null,
   isAdmin: false,
   manageBound: false,
-  playBound: false
+  playBound: false,
+  rankingSortable: null,
+  rankingSaving: false
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -269,11 +271,16 @@ function getRankedGames() {
 }
 
 function renderGameRankingPage() {
+  gameState.rankingSortable?.destroy();
+  gameState.rankingSortable = null;
+
   const rankedGames = getRankedGames();
   setText("rankingCount", `${rankedGames.length} owned game${rankedGames.length === 1 ? "" : "s"}`);
 
   const context = document.getElementById("rankingAdminContext");
-  context.textContent = gameState.isAdmin ? "Editing enabled" : "Public view";
+  context.textContent = gameState.rankingSaving
+    ? "Saving order..."
+    : gameState.isAdmin ? "Editing enabled" : "Public view";
   context.classList.toggle("is-admin", gameState.isAdmin);
 
   const list = document.getElementById("rankingList");
@@ -286,6 +293,8 @@ function renderGameRankingPage() {
   const fragment = document.createDocumentFragment();
   rankedGames.forEach((game, index) => {
     const row = createElement("li", "ranking-row");
+    row.dataset.gameId = game.game_id;
+    row.append(createRankPosition(index, game));
     row.append(createGameImage(game, "rank-game-image", "rank-game-image-fallback"));
 
     const details = createElement("div", "rank-game");
@@ -309,41 +318,140 @@ function renderGameRankingPage() {
     fragment.append(row);
   });
   list.append(fragment);
+  initializeGameRankingDrag();
+}
+
+function createRankPosition(index, game) {
+  const position = createElement("div", "rank-position");
+  position.append(createElement("strong", "rank-number", index + 1));
+
+  if (gameState.isAdmin) {
+    const handle = createElement("button", "rank-drag-handle", "\u2195");
+    handle.type = "button";
+    handle.disabled = gameState.rankingSaving;
+    handle.title = `Drag ${game.name} to a new rank`;
+    handle.setAttribute("aria-label", handle.title);
+    position.append(handle);
+  }
+  return position;
 }
 
 function createGameRankControls(game, index, total) {
   const controls = createElement("div", "rank-controls");
+  const stepControls = createElement("div", "rank-step-controls");
   const upButton = createElement("button", "rank-button", "\u2191");
   const downButton = createElement("button", "rank-button", "\u2193");
 
   upButton.type = "button";
   downButton.type = "button";
-  upButton.disabled = index === 0;
-  downButton.disabled = index === total - 1;
+  upButton.disabled = gameState.rankingSaving || index === 0;
+  downButton.disabled = gameState.rankingSaving || index === total - 1;
   upButton.title = `Move ${game.name} up`;
   downButton.title = `Move ${game.name} down`;
   upButton.setAttribute("aria-label", upButton.title);
   downButton.setAttribute("aria-label", downButton.title);
-  upButton.addEventListener("click", () => moveRankedGame(game.game_id, "up"));
-  downButton.addEventListener("click", () => moveRankedGame(game.game_id, "down"));
+  upButton.addEventListener("click", () => setRankedGamePosition(game.game_id, index));
+  downButton.addEventListener("click", () => setRankedGamePosition(game.game_id, index + 2));
+  stepControls.append(upButton, downButton);
 
-  controls.append(upButton, downButton);
+  const rankForm = createElement("form", "rank-jump-form");
+  const rankLabel = createElement("label", "rank-jump-label", "Rank");
+  const rankInput = createElement("input", "rank-jump-input");
+  rankInput.type = "number";
+  rankInput.inputMode = "numeric";
+  rankInput.min = "1";
+  rankInput.max = String(total);
+  rankInput.value = String(index + 1);
+  rankInput.disabled = gameState.rankingSaving;
+  rankInput.setAttribute("aria-label", `New rank for ${game.name}`);
+  rankInput.addEventListener("focus", () => rankInput.select());
+  rankLabel.append(rankInput);
+
+  const rankSubmit = createElement("button", "rank-jump-button", "Go");
+  rankSubmit.type = "submit";
+  rankSubmit.disabled = gameState.rankingSaving;
+  rankSubmit.setAttribute("aria-label", `Move ${game.name} to entered rank`);
+  rankForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    setRankedGamePosition(game.game_id, Number(rankInput.value));
+  });
+  rankForm.append(rankLabel, rankSubmit);
+
+  controls.append(stepControls, rankForm);
   return controls;
 }
 
-async function moveRankedGame(gameId, direction) {
-  setGlobalStatus("Updating game order...", "info");
-  const { error } = await supabaseClient.rpc("move_board_game", {
+function initializeGameRankingDrag() {
+  if (!gameState.isAdmin || gameState.rankingSaving || !window.Sortable) {
+    return;
+  }
+
+  gameState.rankingSortable = window.Sortable.create(document.getElementById("rankingList"), {
+    animation: 150,
+    handle: ".rank-drag-handle",
+    draggable: ".ranking-row",
+    ghostClass: "is-dragging",
+    chosenClass: "is-drag-chosen",
+    forceFallback: true,
+    fallbackOnBody: true,
+    fallbackTolerance: 3,
+    swapThreshold: 0.65,
+    onEnd(event) {
+      if (event.oldIndex === event.newIndex) {
+        return;
+      }
+      const gameId = event.item.dataset.gameId;
+      window.setTimeout(() => setRankedGamePosition(gameId, event.newIndex + 1), 0);
+    }
+  });
+}
+
+async function setRankedGamePosition(gameId, requestedPosition) {
+  if (gameState.rankingSaving) {
+    return;
+  }
+
+  const rankedGames = getRankedGames();
+  const currentIndex = rankedGames.findIndex((game) => game.game_id === gameId);
+  const numericPosition = Math.trunc(Number(requestedPosition));
+  if (currentIndex < 0 || !Number.isFinite(numericPosition)) {
+    renderGameRankingPage();
+    return;
+  }
+
+  const targetIndex = Math.min(Math.max(numericPosition - 1, 0), rankedGames.length - 1);
+  if (currentIndex === targetIndex) {
+    renderGameRankingPage();
+    return;
+  }
+
+  const previousRanks = new Map(rankedGames.map((game) => [game.game_id, game.rank_position]));
+  const [movedGame] = rankedGames.splice(currentIndex, 1);
+  rankedGames.splice(targetIndex, 0, movedGame);
+  rankedGames.forEach((game, index) => {
+    game.rank_position = index + 1;
+  });
+
+  gameState.rankingSaving = true;
+  renderGameRankingPage();
+  setGlobalStatus(`Moving ${movedGame.name} to rank ${targetIndex + 1}...`, "info");
+
+  const { error } = await supabaseClient.rpc("set_board_game_rank", {
     p_game_id: gameId,
-    p_direction: direction
+    p_target_position: targetIndex + 1
   });
 
   if (error) {
+    rankedGames.forEach((game) => {
+      game.rank_position = previousRanks.get(game.game_id);
+    });
+    gameState.rankingSaving = false;
+    renderGameRankingPage();
     setGlobalStatus(error.message, "error");
     return;
   }
 
-  await loadGameRankingPage();
+  gameState.rankingSaving = false;
   renderGameRankingPage();
   hideGlobalStatus();
 }
