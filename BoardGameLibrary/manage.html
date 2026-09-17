@@ -58,7 +58,7 @@
             <div class="section-heading">
               <div>
                 <h2>Import your BGG collection</h2>
-                <p>Download your own collection while signed in to BGG, then import the XML file here.</p>
+                <p>Download your own collection while signed in to BGG, then import the CSV or XML file here.</p>
               </div>
             </div>
             <form class="lookup-form" id="bggExportForm">
@@ -66,14 +66,17 @@
                 BGG username
                 <input name="username" autocomplete="username" required />
               </label>
-              <button type="submit">Open collection export</button>
+              <div class="form-actions">
+                <button type="submit">Download CSV</button>
+                <button class="button-secondary" id="bggXmlExportButton" type="button">Open XML</button>
+              </div>
             </form>
             <form class="lookup-form" id="bggImportForm">
               <label>
-                Collection XML file
-                <input name="collectionFile" type="file" accept=".xml,application/xml,text/xml" required />
+                Collection CSV or XML file
+                <input name="collectionFile" type="file" accept=".csv,.xml,text/csv,application/csv,application/xml,text/xml" required />
               </label>
-              <button type="submit">Import new games</button>
+              <button type="submit">Import collection</button>
             </form>
             <div id="bggStatus" class="inline-status" role="status" hidden></div>
           </section>
@@ -262,6 +265,7 @@
       </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0/dist/umd/supabase.js"></script>
     <script src="app.js?v=__ASSET_VERSION__"></script>
   </body>

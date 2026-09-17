@@ -1,6 +1,7 @@
 const SUPABASE_URL = "https://fupysqufnvblxyocqxey.supabase.co";
 const SUPABASE_KEY = "sb_publishable_BdHgtwQxbguQOgkAc9gNqg_8uLcLA8e";
-const BGG_COLLECTION_URL = "https://boardgamegeek.com/xmlapi2/collection";
+const BGG_COLLECTION_CSV_URL = "https://boardgamegeek.com/geekcollection.php";
+const BGG_COLLECTION_XML_URL = "https://boardgamegeek.com/xmlapi2/collection";
 
 const supabaseClient = window.supabase
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
@@ -812,6 +813,7 @@ function bindManageControls() {
   document.getElementById("playerForm").addEventListener("submit", savePlayer);
   document.getElementById("fieldForm").addEventListener("submit", saveFieldDefinition);
   document.getElementById("bggExportForm").addEventListener("submit", openBggCollectionExport);
+  document.getElementById("bggXmlExportButton").addEventListener("click", openBggCollectionXml);
   document.getElementById("bggImportForm").addEventListener("submit", importBggCollection);
   document.getElementById("cancelGameEdit").addEventListener("click", resetGameForm);
   document.getElementById("cancelFieldEdit").addEventListener("click", resetFieldForm);
@@ -1169,8 +1171,22 @@ function openBggCollectionExport(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const username = formControl(form, "username").value.trim();
-  const exportUrl = new URL(BGG_COLLECTION_URL);
+  const exportUrl = new URL(BGG_COLLECTION_CSV_URL);
+  exportUrl.searchParams.set("action", "exportcsv");
+  exportUrl.searchParams.set("subtype", "boardgame");
   exportUrl.searchParams.set("username", username);
+  window.open(exportUrl.toString(), "_blank", "noopener,noreferrer");
+  setLocalStatus("bggStatus", "When the CSV download finishes, select that file below.", "info");
+}
+
+function openBggCollectionXml() {
+  const form = document.getElementById("bggExportForm");
+  if (!form.reportValidity()) {
+    return;
+  }
+
+  const exportUrl = new URL(BGG_COLLECTION_XML_URL);
+  exportUrl.searchParams.set("username", formControl(form, "username").value.trim());
   exportUrl.searchParams.set("own", "1");
   exportUrl.searchParams.set("stats", "1");
   window.open(exportUrl.toString(), "_blank", "noopener,noreferrer");
@@ -1182,29 +1198,41 @@ async function importBggCollection(event) {
   const form = event.currentTarget;
   const file = formControl(form, "collectionFile").files[0];
   if (!file) {
-    setLocalStatus("bggStatus", "Choose a BGG collection XML file.", "error");
+    setLocalStatus("bggStatus", "Choose a BGG collection CSV or XML file.", "error");
     return;
   }
 
   setLocalStatus("bggStatus", "Reading collection file...", "info");
   let games;
   try {
-    games = parseBggCollection(await file.text());
+    games = parseBggCollectionFile(await file.text(), file);
   } catch (error) {
     setLocalStatus("bggStatus", error.message || "The collection file could not be read.", "error");
     return;
   }
 
-  const existingIds = new Set(
+  const existingByBggId = new Map(
     gameState.games
-      .map((game) => game.bgg_id)
-      .filter((bggId) => bggId !== null)
-      .map(Number)
+      .filter((game) => game.bgg_id !== null)
+      .map((game) => [Number(game.bgg_id), game])
   );
-  const newGames = games.filter((game) => !existingIds.has(game.bgg_id));
+  const newGames = [];
+  const metadataUpdates = [];
+  games.forEach((game) => {
+    const existingGame = existingByBggId.get(game.bgg_id);
+    if (!existingGame) {
+      newGames.push(game);
+      return;
+    }
 
-  if (!newGames.length) {
-    setLocalStatus("bggStatus", `No new games found. ${games.length} collection games were already present.`, "info");
+    const values = getMissingCollectionMetadata(existingGame, game);
+    if (Object.keys(values).length) {
+      metadataUpdates.push({ gameId: existingGame.game_id, values });
+    }
+  });
+
+  if (!newGames.length && !metadataUpdates.length) {
+    setLocalStatus("bggStatus", `No changes found. All ${games.length} collection games are already up to date.`, "info");
     return;
   }
 
@@ -1221,17 +1249,150 @@ async function importBggCollection(event) {
     importedCount += batch.length;
   }
 
+  let updatedCount = 0;
+  for (const update of metadataUpdates) {
+    const { error } = await supabaseClient
+      .from("board_games")
+      .update(update.values)
+      .eq("game_id", update.gameId);
+    if (error) {
+      await refreshManagePage();
+      setLocalStatus(
+        "bggStatus",
+        `${importedCount} new and ${updatedCount} existing games saved before the error. ${error.message}`,
+        "error"
+      );
+      return;
+    }
+    updatedCount += 1;
+  }
+
   form.reset();
   await refreshManagePage();
-  const skippedCount = games.length - newGames.length;
+  const unchangedCount = games.length - importedCount - updatedCount;
+  const fileHasImages = games.some((game) => game.image_url || game.thumbnail_url);
+  const imageNotice = fileHasImages
+    ? ""
+    : " This file has no image URLs; import the XML export later to fill missing images.";
   setLocalStatus(
     "bggStatus",
-    `${newGames.length} ${newGames.length === 1 ? "game" : "games"} imported${skippedCount ? `; ${skippedCount} already present` : ""}.`,
+    `${importedCount} new, ${updatedCount} enriched, ${unchangedCount} unchanged.${imageNotice}`,
     "success"
   );
 }
 
-function parseBggCollection(xmlText) {
+function getMissingCollectionMetadata(existingGame, importedGame) {
+  const values = {};
+  [
+    "year_published",
+    "min_players",
+    "max_players",
+    "playing_time_minutes",
+    "min_age",
+    "complexity_weight",
+    "bgg_rating",
+    "image_url",
+    "thumbnail_url",
+    "notes"
+  ].forEach((field) => {
+    const existingValue = existingGame[field];
+    const importedValue = importedGame[field];
+    if (
+      (existingValue === null || existingValue === undefined || existingValue === "")
+      && importedValue !== null
+      && importedValue !== undefined
+      && importedValue !== ""
+    ) {
+      values[field] = importedValue;
+    }
+  });
+  if (!existingGame.owned) {
+    values.owned = true;
+  }
+  if (Object.keys(values).length) {
+    values.bgg_synced_at = importedGame.bgg_synced_at;
+  }
+  return values;
+}
+
+function parseBggCollectionFile(fileText, file) {
+  const fileName = String(file?.name || "").toLowerCase();
+  const fileType = String(file?.type || "").toLowerCase();
+  const looksLikeXml = fileText.trimStart().startsWith("<");
+  if (fileName.endsWith(".csv") || fileType.includes("csv") || !looksLikeXml) {
+    return parseBggCollectionCsv(fileText);
+  }
+  return parseBggCollectionXml(fileText);
+}
+
+function parseBggCollectionCsv(csvText) {
+  if (!window.Papa) {
+    throw new Error("The CSV parser did not load. Refresh the page and try again.");
+  }
+
+  const result = window.Papa.parse(csvText, {
+    header: true,
+    skipEmptyLines: "greedy",
+    transformHeader: normalizeCsvHeader
+  });
+  const quoteError = result.errors.find((error) => error.type === "Quotes");
+  if (quoteError) {
+    throw new Error(`The CSV could not be read: ${quoteError.message}`);
+  }
+
+  const gamesById = new Map();
+  result.data.forEach((row) => {
+    const game = parseBggCollectionCsvRow(row);
+    if (game && !gamesById.has(game.bgg_id)) {
+      gamesById.set(game.bgg_id, game);
+    }
+  });
+  if (!gamesById.size) {
+    throw new Error("No owned board games were found in this BGG CSV file.");
+  }
+  return [...gamesById.values()];
+}
+
+function parseBggCollectionCsvRow(row) {
+  const bggId = positiveInteger(readCsvValue(row, "objectid", "bggid", "id"));
+  const name = optionalText(readCsvValue(row, "name", "title", "objectname"));
+  const ownedValue = readCsvValue(row, "own", "owned");
+  const explicitlyNotOwned = ownedValue !== null
+    && !["1", "true", "yes", "y"].includes(String(ownedValue).trim().toLowerCase());
+  if (!bggId || !name || explicitlyNotOwned) {
+    return null;
+  }
+
+  const minPlayers = positiveInteger(readCsvValue(row, "minplayers"));
+  const parsedMaxPlayers = positiveInteger(readCsvValue(row, "maxplayers"));
+  return {
+    name,
+    bgg_id: bggId,
+    year_published: boundedInteger(readCsvValue(row, "yearpublished", "year"), 1800, 3000),
+    min_players: minPlayers,
+    max_players: minPlayers && parsedMaxPlayers && parsedMaxPlayers < minPlayers ? null : parsedMaxPlayers,
+    playing_time_minutes: positiveInteger(readCsvValue(row, "playingtime", "maxplaytime")),
+    min_age: leadingInteger(readCsvValue(row, "minage", "bggrecagerange"), 0, 100),
+    complexity_weight: boundedDecimal(readCsvValue(row, "avgweight", "averageweight", "weight"), 1, 5),
+    bgg_rating: boundedDecimal(readCsvValue(row, "average", "baverage"), 0, 10),
+    image_url: optionalText(readCsvValue(row, "image", "imageurl")),
+    thumbnail_url: optionalText(readCsvValue(row, "thumbnail", "thumbnailurl")),
+    owned: true,
+    notes: optionalText(readCsvValue(row, "comment", "usercomment")),
+    bgg_synced_at: new Date().toISOString()
+  };
+}
+
+function normalizeCsvHeader(header) {
+  return String(header).replace(/^\uFEFF/, "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function readCsvValue(row, ...headers) {
+  const header = headers.find((candidate) => row[candidate] !== undefined && row[candidate] !== "");
+  return header ? row[header] : null;
+}
+
+function parseBggCollectionXml(xmlText) {
   const documentNode = new DOMParser().parseFromString(xmlText, "application/xml");
   if (documentNode.querySelector("parsererror")) {
     throw new Error("The selected file is not valid XML.");
@@ -1271,7 +1432,7 @@ function parseBggCollectionItem(item) {
   return {
     name,
     bgg_id: bggId,
-    year_published: boundedInteger(item.querySelector("yearpublished")?.textContent, 1000, 3000),
+    year_published: boundedInteger(item.querySelector("yearpublished")?.textContent, 1800, 3000),
     min_players: minPlayers,
     max_players: minPlayers && parsedMaxPlayers && parsedMaxPlayers < minPlayers ? null : parsedMaxPlayers,
     playing_time_minutes: positiveInteger(stats?.getAttribute("playingtime")),
@@ -1290,8 +1451,16 @@ function positiveInteger(value) {
 }
 
 function boundedInteger(value, minimum, maximum) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
   const number = Number(value);
   return Number.isSafeInteger(number) && number >= minimum && number <= maximum ? number : null;
+}
+
+function leadingInteger(value, minimum, maximum) {
+  const match = String(value || "").match(/\d+/);
+  return match ? boundedInteger(match[0], minimum, maximum) : null;
 }
 
 function boundedDecimal(value, minimum, maximum) {
