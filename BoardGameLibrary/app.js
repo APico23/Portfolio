@@ -43,8 +43,12 @@ async function initializeBoardGames() {
 
   if (page === "collection") {
     document.getElementById("gameSearch").addEventListener("input", renderCollection);
+    bindGameDialog();
     await loadCollectionData();
     renderCollectionPage();
+  } else if (page === "ranking") {
+    await loadGameRankingPage();
+    renderGameRankingPage();
   } else if (page === "plays") {
     bindPlayControls();
     await loadPlayPageData();
@@ -77,6 +81,10 @@ async function handleAuthChange(session) {
   if (document.body.dataset.page === "plays") {
     renderPlayAccess();
     renderPlayHistory();
+  }
+
+  if (document.body.dataset.page === "ranking") {
+    renderGameRankingPage();
   }
 }
 
@@ -242,20 +250,115 @@ function renderCollection() {
   grid.append(fragment);
 }
 
+async function loadGameRankingPage() {
+  const { data, error } = await supabaseClient
+    .from("board_games")
+    .select("*")
+    .eq("owned", true);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  gameState.games = data || [];
+}
+
+function getRankedGames() {
+  return gameState.games
+    .filter((game) => game.owned && Number.isFinite(Number(game.rank_position)))
+    .sort((left, right) => Number(left.rank_position) - Number(right.rank_position));
+}
+
+function renderGameRankingPage() {
+  const rankedGames = getRankedGames();
+  setText("rankingCount", `${rankedGames.length} owned game${rankedGames.length === 1 ? "" : "s"}`);
+
+  const context = document.getElementById("rankingAdminContext");
+  context.textContent = gameState.isAdmin ? "Editing enabled" : "Public view";
+  context.classList.toggle("is-admin", gameState.isAdmin);
+
+  const list = document.getElementById("rankingList");
+  list.replaceChildren();
+  if (!rankedGames.length) {
+    list.append(createMessage("No owned games are ranked yet."));
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  rankedGames.forEach((game, index) => {
+    const row = createElement("li", "ranking-row");
+    row.append(createGameImage(game, "rank-game-image", "rank-game-image-fallback"));
+
+    const details = createElement("div", "rank-game");
+    details.append(createElement("h3", "", game.name));
+    const contextText = [
+      game.categories?.[0],
+      game.year_published,
+      formatPlayerRange(game)
+    ].filter(Boolean).join(" | ");
+    if (contextText) {
+      details.append(createElement("p", "", contextText));
+    }
+    if (index === 0) {
+      details.append(createElement("span", "favorite-label", "Current favorite"));
+    }
+    row.append(details);
+
+    if (gameState.isAdmin) {
+      row.append(createGameRankControls(game, index, rankedGames.length));
+    }
+    fragment.append(row);
+  });
+  list.append(fragment);
+}
+
+function createGameRankControls(game, index, total) {
+  const controls = createElement("div", "rank-controls");
+  const upButton = createElement("button", "rank-button", "\u2191");
+  const downButton = createElement("button", "rank-button", "\u2193");
+
+  upButton.type = "button";
+  downButton.type = "button";
+  upButton.disabled = index === 0;
+  downButton.disabled = index === total - 1;
+  upButton.title = `Move ${game.name} up`;
+  downButton.title = `Move ${game.name} down`;
+  upButton.setAttribute("aria-label", upButton.title);
+  downButton.setAttribute("aria-label", downButton.title);
+  upButton.addEventListener("click", () => moveRankedGame(game.game_id, "up"));
+  downButton.addEventListener("click", () => moveRankedGame(game.game_id, "down"));
+
+  controls.append(upButton, downButton);
+  return controls;
+}
+
+async function moveRankedGame(gameId, direction) {
+  setGlobalStatus("Updating game order...", "info");
+  const { error } = await supabaseClient.rpc("move_board_game", {
+    p_game_id: gameId,
+    p_direction: direction
+  });
+
+  if (error) {
+    setGlobalStatus(error.message, "error");
+    return;
+  }
+
+  await loadGameRankingPage();
+  renderGameRankingPage();
+  hideGlobalStatus();
+}
+
 function createGameCard(game) {
   const card = createElement("article", "game-card");
   card.append(createGameImage(game, "game-image", "game-image-fallback"));
 
   const content = createElement("div", "game-content");
   const title = createElement("h3", "", game.name);
-  if (game.bgg_id) {
-    const link = createElement("a", "game-source-link", game.name);
-    link.href = `https://boardgamegeek.com/boardgame/${game.bgg_id}`;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.setAttribute("aria-label", `${game.name} on BoardGameGeek`);
-    title.replaceChildren(link);
-  }
+  const detailsButton = createElement("button", "game-detail-trigger", game.name);
+  detailsButton.type = "button";
+  detailsButton.setAttribute("aria-label", `View ${game.name} history and statistics`);
+  detailsButton.addEventListener("click", () => openGameDialog(game));
+  title.replaceChildren(detailsButton);
   content.append(title);
   content.append(createElement(
     "p",
@@ -279,6 +382,275 @@ function createGameCard(game) {
 
   card.append(content);
   return card;
+}
+
+function bindGameDialog() {
+  const dialog = document.getElementById("gameDialog");
+  document.getElementById("closeGameDialog").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) {
+      dialog.close();
+    }
+  });
+}
+
+async function openGameDialog(game) {
+  setText("gameDialogTitle", game.name);
+  const body = document.getElementById("gameDialogBody");
+  body.replaceChildren(createMessage("Loading game history..."));
+  const dialog = document.getElementById("gameDialog");
+  dialog.dataset.gameId = game.game_id;
+  dialog.showModal();
+
+  const [playsResult, fieldsResult] = await Promise.all([
+    fetchPlays(game.game_id, null),
+    supabaseClient
+      .from("board_game_field_definitions")
+      .select("*")
+      .eq("game_id", game.game_id)
+      .order("sort_order", { ascending: true })
+      .order("label", { ascending: true })
+  ]);
+
+  if (!dialog.open || dialog.dataset.gameId !== game.game_id) {
+    return;
+  }
+  try {
+    throwFirstError(playsResult, fieldsResult);
+    renderGameDialog(game, playsResult.data || [], fieldsResult.data || []);
+  } catch (error) {
+    body.replaceChildren(createMessage(error.message || "Game history could not be loaded."));
+  }
+}
+
+function renderGameDialog(game, plays, fields) {
+  const body = document.getElementById("gameDialogBody");
+  body.replaceChildren();
+  const playerStats = summarizeGamePlayers(plays);
+  const champion = playerStats.find((player) => player.wins > 0);
+  const scores = playerStats.flatMap((player) => player.scores);
+
+  const overview = createElement("div", "game-dialog-overview");
+  overview.append(createGameImage(game, "dialog-game-image", "dialog-game-image-fallback"));
+  const overviewText = createElement("div", "game-dialog-copy");
+  if (game.description) {
+    overviewText.append(createElement("p", "game-dialog-description", game.description));
+  }
+  const metadata = [
+    game.year_published,
+    formatPlayerRange(game),
+    game.playing_time_minutes ? `${game.playing_time_minutes} minutes` : null,
+    game.complexity_weight ? `Weight ${formatDecimal(game.complexity_weight)}` : null
+  ].filter(Boolean);
+  overviewText.append(createElement("p", "game-dialog-metadata", metadata.join(" | ")));
+  if (game.bgg_id) {
+    const sourceLink = createElement("a", "game-source-link", "View on BoardGameGeek");
+    sourceLink.href = `https://boardgamegeek.com/boardgame/${game.bgg_id}`;
+    sourceLink.target = "_blank";
+    sourceLink.rel = "noopener noreferrer";
+    overviewText.append(sourceLink);
+  }
+  overview.append(overviewText);
+  body.append(overview);
+
+  const summary = createElement("section", "game-dialog-section");
+  summary.append(createElement("h3", "", "At a glance"));
+  const metrics = createElement("div", "game-dialog-metrics");
+  metrics.append(createDialogMetric(plays.length, "Recorded plays"));
+  metrics.append(createDialogMetric(playerStats.length, "Players"));
+  metrics.append(createDialogMetric(
+    champion ? champion.name : "No winner yet",
+    champion ? `${champion.wins} ${champion.wins === 1 ? "win" : "wins"}, current champion` : "Current champion"
+  ));
+  metrics.append(createDialogMetric(
+    scores.length ? formatDecimal(average(scores)) : "Not recorded",
+    scores.length ? `Average points from ${scores.length} scores` : "Average points"
+  ));
+  summary.append(metrics);
+  body.append(summary);
+
+  const strategySummaries = summarizeCustomFields(plays, fields.filter(isStrategyField));
+  if (strategySummaries.length) {
+    body.append(createCustomSummarySection("Common strategies", strategySummaries));
+  }
+
+  const customSummaries = summarizeCustomFields(plays, fields.filter((field) => !isStrategyField(field)));
+  if (customSummaries.length) {
+    body.append(createCustomSummarySection("Recorded fields", customSummaries));
+  }
+
+  const peopleSection = createElement("section", "game-dialog-section");
+  peopleSection.append(createElement("h3", "", "People who have played"));
+  if (!playerStats.length) {
+    peopleSection.append(createMessage("No players have been recorded for this game."));
+  } else {
+    const peopleList = createElement("div", "game-player-list");
+    playerStats.forEach((player) => {
+      const row = createElement("div", "game-player-row");
+      row.append(createElement("strong", "", player.name));
+      const facts = [
+        `${player.plays} ${player.plays === 1 ? "play" : "plays"}`,
+        `${player.wins} ${player.wins === 1 ? "win" : "wins"}`,
+        player.scores.length ? `${formatDecimal(average(player.scores))} avg points` : null
+      ].filter(Boolean);
+      row.append(createElement("span", "", facts.join(" | ")));
+      peopleList.append(row);
+    });
+    peopleSection.append(peopleList);
+  }
+  body.append(peopleSection);
+
+  const playsSection = createElement("section", "game-dialog-section");
+  playsSection.append(createElement("h3", "", "Every recorded play"));
+  if (!plays.length) {
+    playsSection.append(createMessage("No plays have been recorded for this game."));
+  } else {
+    const playList = createElement("div", "dialog-play-list");
+    plays.forEach((play) => playList.append(createDialogPlay(play, fields)));
+    playsSection.append(playList);
+  }
+  body.append(playsSection);
+}
+
+function createDialogMetric(value, label) {
+  const metric = createElement("div", "game-dialog-metric");
+  metric.append(createElement("strong", "", value));
+  metric.append(createElement("span", "", label));
+  return metric;
+}
+
+function summarizeGamePlayers(plays) {
+  const players = new Map();
+  plays.forEach((play) => {
+    (play.participants || []).forEach((participant) => {
+      const playerId = participant.player_id;
+      const summary = players.get(playerId) || {
+        name: participant.player?.display_name || "Unknown player",
+        plays: 0,
+        wins: 0,
+        scores: []
+      };
+      summary.plays += 1;
+      summary.wins += participant.is_winner ? 1 : 0;
+      if (participant.score !== null && participant.score !== undefined && Number.isFinite(Number(participant.score))) {
+        summary.scores.push(Number(participant.score));
+      }
+      players.set(playerId, summary);
+    });
+  });
+
+  return [...players.values()].sort((left, right) => (
+    right.wins - left.wins
+    || (right.wins / right.plays) - (left.wins / left.plays)
+    || right.plays - left.plays
+    || left.name.localeCompare(right.name)
+  ));
+}
+
+function isStrategyField(field) {
+  return ["text", "select"].includes(field.field_type)
+    && /strateg|tactic|approach|build/i.test(`${field.field_key} ${field.label}`);
+}
+
+function summarizeCustomFields(plays, fields) {
+  return fields.map((field) => {
+    const values = [];
+    plays.forEach((play) => {
+      if (field.scope === "play") {
+        values.push(play.custom_values?.[field.field_key]);
+      } else {
+        (play.participants || []).forEach((participant) => {
+          values.push(participant.custom_values?.[field.field_key]);
+        });
+      }
+    });
+    const recordedValues = values.filter((value) => value !== null && value !== undefined && value !== "");
+    if (!recordedValues.length) {
+      return null;
+    }
+
+    let summary;
+    if (field.field_type === "number") {
+      const numbers = recordedValues.map(Number).filter(Number.isFinite);
+      summary = numbers.length ? `${formatDecimal(average(numbers))}${field.unit ? ` ${field.unit}` : ""} average` : "";
+    } else if (field.field_type === "boolean") {
+      const trueCount = recordedValues.filter((value) => value === true).length;
+      summary = `${trueCount} yes (${formatDecimal(100 * trueCount / recordedValues.length)}%)`;
+    } else {
+      const counts = new Map();
+      recordedValues.forEach((value) => {
+        const label = String(value).trim();
+        if (label) {
+          counts.set(label, (counts.get(label) || 0) + 1);
+        }
+      });
+      summary = [...counts.entries()]
+        .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+        .slice(0, 4)
+        .map(([value, count]) => `${value} (${count})`)
+        .join(", ");
+    }
+    return summary ? { label: field.label, summary, count: recordedValues.length } : null;
+  }).filter(Boolean);
+}
+
+function createCustomSummarySection(title, summaries) {
+  const section = createElement("section", "game-dialog-section");
+  section.append(createElement("h3", "", title));
+  const grid = createElement("div", "game-field-summary-grid");
+  summaries.forEach((item) => {
+    const summary = createElement("div", "game-field-summary");
+    summary.append(createElement("strong", "", item.label));
+    summary.append(createElement("span", "", item.summary));
+    summary.append(createElement("small", "", `${item.count} recorded ${item.count === 1 ? "value" : "values"}`));
+    grid.append(summary);
+  });
+  section.append(grid);
+  return section;
+}
+
+function createDialogPlay(play, fields) {
+  const row = createElement("article", "dialog-play");
+  const heading = createElement("div", "dialog-play-heading");
+  const context = [formatDateTime(play.played_at), play.location, play.duration_minutes ? `${play.duration_minutes} minutes` : null]
+    .filter(Boolean)
+    .join(" | ");
+  heading.append(createElement("strong", "", context));
+  const playDetails = formatCustomValues(play.custom_values, fields.filter((field) => field.scope === "play"));
+  if (playDetails.length) {
+    heading.append(createElement("span", "", playDetails.join(" | ")));
+  }
+  row.append(heading);
+
+  const playerList = createElement("div", "dialog-play-players");
+  [...(play.participants || [])]
+    .sort((left, right) => left.seat_order - right.seat_order)
+    .forEach((participant) => {
+      const line = createElement("p");
+      line.append(createElement("strong", "", participant.player?.display_name || "Unknown player"));
+      const facts = [
+        participant.score !== null && participant.score !== undefined ? `${formatDecimal(participant.score)} points` : null,
+        participant.result,
+        participant.team ? `Team ${participant.team}` : null,
+        ...formatCustomValues(participant.custom_values, fields.filter((field) => field.scope === "player"))
+      ].filter(Boolean);
+      if (facts.length) {
+        line.append(document.createTextNode(` | ${facts.join(" | ")}`));
+      }
+      if (participant.is_winner) {
+        line.append(createElement("span", "winner-tag", "Winner"));
+      }
+      playerList.append(line);
+    });
+  row.append(playerList);
+  if (play.notes) {
+    row.append(createElement("p", "dialog-play-notes", play.notes));
+  }
+  return row;
+}
+
+function average(values) {
+  return values.reduce((total, value) => total + Number(value), 0) / values.length;
 }
 
 function bindPlayControls() {
@@ -318,8 +690,8 @@ async function loadPlayPageData() {
   gameState.plays = playsResult.data || [];
 }
 
-function fetchPlays() {
-  return supabaseClient
+function fetchPlays(gameId = null, limit = 200) {
+  let query = supabaseClient
     .from("board_game_plays")
     .select(`
       play_id,
@@ -341,8 +713,12 @@ function fetchPlays() {
         player:player_id(display_name)
       )
     `)
-    .order("played_at", { ascending: false })
-    .limit(200);
+    .order("played_at", { ascending: false });
+
+  if (gameId) {
+    query = query.eq("game_id", gameId);
+  }
+  return limit === null ? query : query.limit(limit);
 }
 
 function renderPlayPage() {
@@ -1608,6 +1984,13 @@ function setGlobalStatus(message, tone) {
   status.hidden = false;
   status.textContent = message;
   status.className = `status-banner status-${tone}`;
+}
+
+function hideGlobalStatus() {
+  const status = document.getElementById("globalStatus");
+  if (status) {
+    status.hidden = true;
+  }
 }
 
 function setLocalStatus(id, message, tone) {

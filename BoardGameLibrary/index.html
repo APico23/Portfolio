@@ -28,6 +28,7 @@
 
       <nav class="page-nav" aria-label="Board game library">
         <a class="nav-link" data-nav="collection" href="index.html">Collection</a>
+        <a class="nav-link" data-nav="ranking" href="ranking.html">Ranking</a>
         <a class="nav-link" data-nav="plays" href="plays.html">Plays</a>
         <a class="nav-link" data-nav="players" href="players.html">Players</a>
         <a class="nav-link" data-nav="manage" href="manage.html">Manage</a>
@@ -71,6 +72,17 @@
           </div>
         </section>
       </main>
+
+      <dialog class="game-dialog" id="gameDialog" aria-labelledby="gameDialogTitle">
+        <div class="game-dialog-header">
+          <div>
+            <span class="cabinet-label">Game record</span>
+            <h2 id="gameDialogTitle">Game details</h2>
+          </div>
+          <button class="dialog-close" id="closeGameDialog" type="button" aria-label="Close game details">&times;</button>
+        </div>
+        <div id="gameDialogBody"></div>
+      </dialog>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0/dist/umd/supabase.js"></script>
