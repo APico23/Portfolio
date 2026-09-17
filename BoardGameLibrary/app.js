@@ -1,5 +1,6 @@
 const SUPABASE_URL = "https://fupysqufnvblxyocqxey.supabase.co";
 const SUPABASE_KEY = "sb_publishable_BdHgtwQxbguQOgkAc9gNqg_8uLcLA8e";
+const BGG_COLLECTION_URL = "https://boardgamegeek.com/xmlapi2/collection";
 
 const supabaseClient = window.supabase
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
@@ -810,7 +811,8 @@ function bindManageControls() {
   document.getElementById("gameForm").addEventListener("submit", saveGame);
   document.getElementById("playerForm").addEventListener("submit", savePlayer);
   document.getElementById("fieldForm").addEventListener("submit", saveFieldDefinition);
-  document.getElementById("bggSearchForm").addEventListener("submit", searchBoardGameGeek);
+  document.getElementById("bggExportForm").addEventListener("submit", openBggCollectionExport);
+  document.getElementById("bggImportForm").addEventListener("submit", importBggCollection);
   document.getElementById("cancelGameEdit").addEventListener("click", resetGameForm);
   document.getElementById("cancelFieldEdit").addEventListener("click", resetFieldForm);
 
@@ -877,10 +879,6 @@ async function saveGame(event) {
     owned: formControl(form, "owned").checked,
     notes: optionalText(formControl(form, "notes").value)
   };
-
-  if (form.dataset.bggSynced === "true") {
-    payload.bgg_synced_at = new Date().toISOString();
-  }
 
   const gameId = formControl(form, "gameId").value;
   setLocalStatus("gameFormStatus", "Saving game...", "info");
@@ -1075,7 +1073,6 @@ function startEditingGame(game) {
     formControl(form, name).value = value ?? "";
   });
   formControl(form, "owned").checked = game.owned;
-  form.dataset.bggSynced = "false";
   setText("gameFormHeading", `Edit ${game.name}`);
   setText("saveGameButton", "Update game");
   document.getElementById("cancelGameEdit").hidden = false;
@@ -1088,7 +1085,6 @@ function resetGameForm() {
   form.reset();
   formControl(form, "gameId").value = "";
   formControl(form, "owned").checked = true;
-  form.dataset.bggSynced = "false";
   setText("gameFormHeading", "Add a game");
   setText("saveGameButton", "Save game");
   document.getElementById("cancelGameEdit").hidden = true;
@@ -1169,82 +1165,141 @@ async function deleteField(field) {
   setGlobalStatus(`${field.label} deleted.`, "success");
 }
 
-async function searchBoardGameGeek(event) {
+function openBggCollectionExport(event) {
   event.preventDefault();
   const form = event.currentTarget;
-  const query = formControl(form, "query").value.trim();
-  setLocalStatus("bggStatus", "Searching BoardGameGeek...", "info");
+  const username = formControl(form, "username").value.trim();
+  const exportUrl = new URL(BGG_COLLECTION_URL);
+  exportUrl.searchParams.set("username", username);
+  exportUrl.searchParams.set("own", "1");
+  exportUrl.searchParams.set("stats", "1");
+  window.open(exportUrl.toString(), "_blank", "noopener,noreferrer");
+  setLocalStatus("bggStatus", "Save the XML from the BGG tab, then select that file below.", "info");
+}
 
-  const { data, error } = await supabaseClient.functions.invoke("bgg-game", {
-    body: { query }
-  });
-  if (error) {
-    setLocalStatus("bggStatus", `BGG search failed: ${error.message}`, "error");
+async function importBggCollection(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const file = formControl(form, "collectionFile").files[0];
+  if (!file) {
+    setLocalStatus("bggStatus", "Choose a BGG collection XML file.", "error");
     return;
   }
 
-  renderBggResults(data?.results || []);
+  setLocalStatus("bggStatus", "Reading collection file...", "info");
+  let games;
+  try {
+    games = parseBggCollection(await file.text());
+  } catch (error) {
+    setLocalStatus("bggStatus", error.message || "The collection file could not be read.", "error");
+    return;
+  }
+
+  const existingIds = new Set(
+    gameState.games
+      .map((game) => game.bgg_id)
+      .filter((bggId) => bggId !== null)
+      .map(Number)
+  );
+  const newGames = games.filter((game) => !existingIds.has(game.bgg_id));
+
+  if (!newGames.length) {
+    setLocalStatus("bggStatus", `No new games found. ${games.length} collection games were already present.`, "info");
+    return;
+  }
+
+  let importedCount = 0;
+  for (let offset = 0; offset < newGames.length; offset += 100) {
+    const batch = newGames.slice(offset, offset + 100);
+    const { error } = await supabaseClient.from("board_games").insert(batch);
+    if (error) {
+      await refreshManagePage();
+      const prefix = importedCount ? `${importedCount} games imported before the error. ` : "";
+      setLocalStatus("bggStatus", `${prefix}${error.message}`, "error");
+      return;
+    }
+    importedCount += batch.length;
+  }
+
+  form.reset();
+  await refreshManagePage();
+  const skippedCount = games.length - newGames.length;
   setLocalStatus(
     "bggStatus",
-    data?.results?.length ? `${data.results.length} matches found.` : "No BGG matches found.",
-    data?.results?.length ? "success" : "info"
+    `${newGames.length} ${newGames.length === 1 ? "game" : "games"} imported${skippedCount ? `; ${skippedCount} already present` : ""}.`,
+    "success"
   );
 }
 
-function renderBggResults(results) {
-  const container = document.getElementById("bggSearchResults");
-  container.replaceChildren();
-  results.forEach((result) => {
-    const row = createElement("div", "bgg-result");
-    const text = createElement("div");
-    text.append(createElement("strong", "", result.name));
-    text.append(createElement("p", "", [result.yearPublished, `BGG ${result.id}`].filter(Boolean).join(", ")));
-    const chooseButton = createElement("button", "button-secondary", "Use this game");
-    chooseButton.type = "button";
-    chooseButton.addEventListener("click", () => loadBggGame(result.id));
-    row.append(text, chooseButton);
-    container.append(row);
-  });
-}
-
-async function loadBggGame(bggId) {
-  setLocalStatus("bggStatus", "Loading BGG details...", "info");
-  const { data, error } = await supabaseClient.functions.invoke("bgg-game", {
-    body: { id: Number(bggId) }
-  });
-  if (error || !data?.game) {
-    setLocalStatus("bggStatus", `BGG details failed: ${error?.message || "No game returned."}`, "error");
-    return;
+function parseBggCollection(xmlText) {
+  const documentNode = new DOMParser().parseFromString(xmlText, "application/xml");
+  if (documentNode.querySelector("parsererror")) {
+    throw new Error("The selected file is not valid XML.");
   }
 
-  const game = data.game;
-  const form = document.getElementById("gameForm");
-  const values = {
-    name: game.name,
-    bggId: game.bggId,
-    yearPublished: game.yearPublished,
-    minPlayers: game.minPlayers,
-    maxPlayers: game.maxPlayers,
-    playingTime: game.playingTimeMinutes,
-    minAge: game.minAge,
-    complexityWeight: game.complexityWeight,
-    bggRating: game.bggRating,
-    categories: game.categories?.join(", "),
-    mechanisms: game.mechanisms?.join(", "),
-    designers: game.designers?.join(", "),
-    imageUrl: game.imageUrl,
-    thumbnailUrl: game.thumbnailUrl,
-    description: game.description
-  };
-  Object.entries(values).forEach(([name, value]) => {
-    if (value !== null && value !== undefined) {
-      formControl(form, name).value = value;
+  const message = documentNode.querySelector("message")?.textContent?.trim();
+  if (message && !documentNode.querySelector("item")) {
+    throw new Error(`BGG has not prepared the collection yet: ${message}`);
+  }
+
+  const gamesById = new Map();
+  documentNode.querySelectorAll("items > item").forEach((item) => {
+    const game = parseBggCollectionItem(item);
+    if (game && !gamesById.has(game.bgg_id)) {
+      gamesById.set(game.bgg_id, game);
     }
   });
-  form.dataset.bggSynced = "true";
-  formControl(form, "owned").checked = true;
-  setLocalStatus("bggStatus", "BGG details loaded. Review them before saving.", "success");
-  form.scrollIntoView({ block: "start" });
+
+  if (!gamesById.size) {
+    throw new Error("No owned board games were found in this collection file.");
+  }
+  return [...gamesById.values()];
+}
+
+function parseBggCollectionItem(item) {
+  const status = item.querySelector("status");
+  const bggId = Number(item.getAttribute("objectid"));
+  const name = item.querySelector("name")?.textContent?.trim();
+  if (status?.getAttribute("own") !== "1" || !Number.isSafeInteger(bggId) || bggId <= 0 || !name) {
+    return null;
+  }
+
+  const stats = item.querySelector("stats");
+  const rating = stats?.querySelector("rating");
+  const minPlayers = positiveInteger(stats?.getAttribute("minplayers"));
+  const parsedMaxPlayers = positiveInteger(stats?.getAttribute("maxplayers"));
+  return {
+    name,
+    bgg_id: bggId,
+    year_published: boundedInteger(item.querySelector("yearpublished")?.textContent, 1000, 3000),
+    min_players: minPlayers,
+    max_players: minPlayers && parsedMaxPlayers && parsedMaxPlayers < minPlayers ? null : parsedMaxPlayers,
+    playing_time_minutes: positiveInteger(stats?.getAttribute("playingtime")),
+    complexity_weight: boundedDecimal(rating?.querySelector("averageweight")?.getAttribute("value"), 1, 5),
+    bgg_rating: boundedDecimal(rating?.querySelector("average")?.getAttribute("value"), 0, 10),
+    image_url: optionalText(item.querySelector("image")?.textContent || ""),
+    thumbnail_url: optionalText(item.querySelector("thumbnail")?.textContent || ""),
+    owned: true,
+    bgg_synced_at: new Date().toISOString()
+  };
+}
+
+function positiveInteger(value) {
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number > 0 ? number : null;
+}
+
+function boundedInteger(value, minimum, maximum) {
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number >= minimum && number <= maximum ? number : null;
+}
+
+function boundedDecimal(value, minimum, maximum) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const number = Number(value);
+  return Number.isFinite(number) && number >= minimum && number <= maximum ? number : null;
 }
 
 function collectCustomValues(container) {

@@ -916,35 +916,6 @@ button:disabled {
   margin-bottom: 0;
 }
 
-.bgg-results {
-  display: grid;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.bgg-result {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-strong);
-}
-
-.bgg-result p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.78rem;
-}
-
-.bgg-result button {
-  min-height: 38px;
-  padding: 0.35rem 0.65rem;
-  font-size: 0.78rem;
-}
-
 .form-actions,
 .record-actions {
   display: flex;
@@ -1098,8 +1069,7 @@ button:disabled {
     grid-column: auto;
   }
 
-  .record-row,
-  .bgg-result {
+  .record-row {
     grid-template-columns: 1fr;
   }
 
