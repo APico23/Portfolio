@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Read Book Ranking</title>
+    <meta name="description" content="Austin's read books ordered from favorite to least favorite." />
+    <meta name="theme-color" content="#173a2e" />
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Literata:opsz,wght@7..72,500;7..72,650&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=__ASSET_VERSION__" />
+  </head>
+  <body data-page="ranking">
+    <div class="page-shell">
+      <header class="topbar compact-topbar">
+        <div class="brand-block">
+          <span class="collection-label">Austin's collection</span>
+          <h1>Read Book Ranking</h1>
+          <p>A relative order of every owned book Austin has finished.</p>
+        </div>
+        <a class="home-link" href="../index.html">Back to home</a>
+      </header>
+
+      <nav class="page-nav" aria-label="Book library">
+        <a class="nav-link" data-nav="catalog" href="index.html">Library</a>
+        <a class="nav-link" data-nav="ranking" href="ranking.html">Read ranking</a>
+        <a class="nav-link" data-nav="manage" href="manage.html">Manage</a>
+      </nav>
+
+      <div id="globalStatus" class="status-banner" role="status" hidden></div>
+
+      <main class="ranking-layout">
+        <section class="ranking-heading">
+          <div>
+            <h2>Favorite first</h2>
+            <p id="rankingCount">Loading ranked shelf...</p>
+          </div>
+          <p class="admin-context" id="rankingAdminContext">Public view</p>
+        </section>
+
+        <ol class="ranking-list" id="rankingList" aria-live="polite">
+          <li class="loading-block">Loading ranked books...</li>
+        </ol>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0/dist/umd/supabase.js"></script>
+    <script src="app.js?v=__ASSET_VERSION__"></script>
+  </body>
+</html>

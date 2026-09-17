@@ -19,7 +19,7 @@
       <header class="topbar">
         <div class="brand-block">
           <h1>Review Existing Sandwiches</h1>
-          <p>Select a reviewer, pick an existing sandwich, and save a score from 1 to 10. If the review already exists, the page loads it and updates it in place.</p>
+          <p>Select a reviewer, pick an existing sandwich, and save a score from 1 to 10.</p>
         </div>
         <a class="home-link" href="../index.html">Back to home</a>
       </header>
@@ -32,6 +32,25 @@
       </nav>
 
       <div id="globalStatus" class="status-banner" hidden></div>
+
+      <section class="auth-panel">
+        <div id="signedOutView">
+          <h2>Administrator sign in</h2>
+          <p>Required only for Austin Pico reviews.</p>
+          <form class="inline-auth-form" id="loginForm">
+            <label>
+              Email address
+              <input type="email" name="email" autocomplete="email" required />
+            </label>
+            <button type="submit">Email sign-in link</button>
+          </form>
+        </div>
+        <div class="signed-in-row" id="signedInView" hidden>
+          <p>Signed in as <strong id="signedInEmail"></strong></p>
+          <button class="button-secondary" id="signOutButton" type="button">Sign out</button>
+        </div>
+        <div id="authStatus" class="inline-status" role="status" hidden></div>
+      </section>
 
       <section class="stats-grid">
         <article class="panel stat-card">
@@ -56,6 +75,21 @@
         <article class="form-panel">
           <h2>Save a review</h2>
           <p>Choose the reviewer and sandwich, then submit the rating.</p>
+          <div class="reviewer-create">
+            <h3>New reviewer</h3>
+            <form id="publicReviewerForm">
+              <label>
+                First name
+                <input name="firstName" autocomplete="given-name" required />
+              </label>
+              <label>
+                Last name
+                <input name="lastName" autocomplete="family-name" required />
+              </label>
+              <button class="button-secondary" type="submit">Add my name</button>
+            </form>
+            <div id="publicReviewerStatus" class="inline-status" role="status" hidden></div>
+          </div>
           <form id="reviewForm">
             <label>
               Reviewer
@@ -69,8 +103,9 @@
               Rating (1-10)
               <input id="reviewRating" type="number" min="1" max="10" step="1" inputmode="numeric" value="5" required />
             </label>
-            <button type="submit">Save review</button>
+            <button id="saveReviewButton" type="submit">Save review</button>
           </form>
+          <div id="reviewAccessStatus" class="inline-status" role="status" hidden></div>
           <div id="reviewStatus" class="inline-status" hidden></div>
         </article>
 

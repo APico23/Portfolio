@@ -212,7 +212,8 @@ body {
 .hero-card,
 .table-panel,
 .form-panel,
-.list-panel {
+.list-panel,
+.auth-panel {
   background: var(--card);
   border: 1px solid var(--line);
   border-top: 4px solid var(--crimson);
@@ -224,10 +225,20 @@ body {
   margin-bottom: 1.5rem;
 }
 
+.table-panel {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.auth-panel {
+  margin-bottom: 1.5rem;
+}
+
 .hero-card h2,
 .table-panel h2,
 .form-panel h2,
-.list-panel h2 {
+.list-panel h2,
+.auth-panel h2 {
   margin: 0;
   font-family: var(--font-display);
   font-size: 1.4rem;
@@ -239,7 +250,8 @@ body {
 .hero-card p,
 .table-panel > p,
 .form-panel > p,
-.list-panel > p {
+.list-panel > p,
+.auth-panel p {
   margin: 0.5rem 0 0;
   max-width: 62ch;
   color: var(--muted);
@@ -390,6 +402,37 @@ form {
   margin-top: 1.5rem;
 }
 
+.inline-auth-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.signed-in-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.signed-in-row p {
+  margin: 0;
+}
+
+.reviewer-create {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.reviewer-create h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 label {
   display: grid;
   gap: 0.4rem;
@@ -471,6 +514,20 @@ button:active {
   transform: translateY(2px);
 }
 
+button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.button-secondary {
+  background: var(--ink);
+}
+
+[hidden] {
+  display: none !important;
+}
+
 /* ── Lists ──────────────────────────────────────────── */
 
 .stack-list {
@@ -519,6 +576,10 @@ button:active {
 
   .nav-pill {
     padding-inline: 0.85rem;
+  }
+
+  .inline-auth-form {
+    grid-template-columns: 1fr;
   }
 
   .stat-card {

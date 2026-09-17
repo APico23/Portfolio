@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Austin's Board Game Library</title>
+    <meta name="description" content="Austin's board game collection, recorded plays, and player statistics." />
+    <meta name="theme-color" content="#174f59" />
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Black&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=__ASSET_VERSION__" />
+  </head>
+  <body data-page="collection">
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <span class="cabinet-label">Austin's collection</span>
+          <h1>The Game Cabinet</h1>
+          <p>Board games, table history, and the people who keep coming back to play.</p>
+        </div>
+        <a class="home-link" href="../index.html">Back to home</a>
+      </header>
+
+      <nav class="page-nav" aria-label="Board game library">
+        <a class="nav-link" data-nav="collection" href="index.html">Collection</a>
+        <a class="nav-link" data-nav="plays" href="plays.html">Plays</a>
+        <a class="nav-link" data-nav="players" href="players.html">Players</a>
+        <a class="nav-link" data-nav="manage" href="manage.html">Manage</a>
+      </nav>
+
+      <div id="globalStatus" class="status-banner" role="status" hidden></div>
+
+      <main>
+        <section class="stats-board" aria-label="Collection summary">
+          <div class="stat-block">
+            <span class="stat-label">Games owned</span>
+            <strong class="stat-value" id="ownedGameCount">-</strong>
+          </div>
+          <div class="stat-block">
+            <span class="stat-label">Plays logged</span>
+            <strong class="stat-value" id="totalPlayCount">-</strong>
+          </div>
+          <div class="stat-block stat-wide">
+            <span class="stat-label">Most played</span>
+            <strong class="stat-value stat-title" id="mostPlayedGame">-</strong>
+          </div>
+          <div class="stat-block stat-wide">
+            <span class="stat-label">Last on the table</span>
+            <strong class="stat-value stat-title" id="lastPlayedGame">-</strong>
+          </div>
+        </section>
+
+        <section class="collection-panel">
+          <div class="section-heading">
+            <div>
+              <h2>Game collection</h2>
+              <p id="collectionCount">Loading games...</p>
+            </div>
+            <label class="search-field">
+              <span>Search collection</span>
+              <input type="search" id="gameSearch" autocomplete="off" />
+            </label>
+          </div>
+          <div class="game-grid" id="gameGrid" aria-live="polite">
+            <div class="loading-block">Loading games...</div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0/dist/umd/supabase.js"></script>
+    <script src="app.js?v=__ASSET_VERSION__"></script>
+  </body>
+</html>

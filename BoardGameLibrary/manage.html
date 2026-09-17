@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Board Game Library</title>
+    <meta name="theme-color" content="#174f59" />
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Black&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=__ASSET_VERSION__" />
+  </head>
+  <body data-page="manage">
+    <div class="page-shell">
+      <header class="topbar compact-topbar">
+        <div class="brand-block">
+          <span class="cabinet-label">Game cabinet</span>
+          <h1>Manage Data</h1>
+          <p>Add games and players, import BGG details, and define fields for individual games.</p>
+        </div>
+        <a class="home-link" href="../index.html">Back to home</a>
+      </header>
+
+      <nav class="page-nav" aria-label="Board game library">
+        <a class="nav-link" data-nav="collection" href="index.html">Collection</a>
+        <a class="nav-link" data-nav="plays" href="plays.html">Plays</a>
+        <a class="nav-link" data-nav="players" href="players.html">Players</a>
+        <a class="nav-link" data-nav="manage" href="manage.html">Manage</a>
+      </nav>
+
+      <div id="globalStatus" class="status-banner" role="status" hidden></div>
+
+      <main>
+        <section class="auth-panel" id="authPanel">
+          <div id="signedOutView">
+            <h2>Administrator sign in</h2>
+            <form class="inline-auth-form" id="loginForm">
+              <label>
+                Email address
+                <input type="email" name="email" autocomplete="email" required />
+              </label>
+              <button type="submit">Email sign-in link</button>
+            </form>
+          </div>
+          <div class="signed-in-row" id="signedInView" hidden>
+            <p>Signed in as <strong id="signedInEmail"></strong></p>
+            <button class="button-secondary" id="signOutButton" type="button">Sign out</button>
+          </div>
+          <div id="authStatus" class="inline-status" role="status" hidden></div>
+        </section>
+
+        <div id="adminOnly" hidden>
+          <section class="editor-panel bgg-panel">
+            <div class="section-heading">
+              <div>
+                <h2>Find on BoardGameGeek</h2>
+                <p>Search BGG, select a result, then review the imported fields.</p>
+              </div>
+            </div>
+            <form class="lookup-form" id="bggSearchForm">
+              <label>
+                Game name
+                <input name="query" required />
+              </label>
+              <button type="submit">Search BGG</button>
+            </form>
+            <div class="bgg-results" id="bggSearchResults"></div>
+            <div id="bggStatus" class="inline-status" role="status" hidden></div>
+          </section>
+
+          <section class="editor-panel">
+            <div class="section-heading">
+              <div>
+                <h2 id="gameFormHeading">Add a game</h2>
+                <p>BGG fields can also be entered or changed manually.</p>
+              </div>
+              <button class="button-secondary" id="cancelGameEdit" type="button" hidden>Cancel edit</button>
+            </div>
+            <form id="gameForm">
+              <input type="hidden" name="gameId" />
+              <div class="form-grid three-up">
+                <label>
+                  Game name
+                  <input name="name" required />
+                </label>
+                <label>
+                  BGG ID
+                  <input name="bggId" type="number" min="1" />
+                </label>
+                <label>
+                  Published year
+                  <input name="yearPublished" type="number" min="1800" max="3000" />
+                </label>
+                <label>
+                  Minimum players
+                  <input name="minPlayers" type="number" min="1" />
+                </label>
+                <label>
+                  Maximum players
+                  <input name="maxPlayers" type="number" min="1" />
+                </label>
+                <label>
+                  Playing time in minutes
+                  <input name="playingTime" type="number" min="1" />
+                </label>
+                <label>
+                  Minimum age
+                  <input name="minAge" type="number" min="0" />
+                </label>
+                <label>
+                  BGG weight
+                  <input name="complexityWeight" type="number" min="1" max="5" step="0.01" />
+                </label>
+                <label>
+                  BGG rating
+                  <input name="bggRating" type="number" min="0" max="10" step="0.01" />
+                </label>
+                <label>
+                  Categories, comma separated
+                  <input name="categories" />
+                </label>
+                <label>
+                  Mechanisms, comma separated
+                  <input name="mechanisms" />
+                </label>
+                <label>
+                  Designers, comma separated
+                  <input name="designers" />
+                </label>
+                <label>
+                  Image URL
+                  <input name="imageUrl" type="url" />
+                </label>
+                <label>
+                  Thumbnail URL
+                  <input name="thumbnailUrl" type="url" />
+                </label>
+                <label class="checkbox-label">
+                  <input name="owned" type="checkbox" checked />
+                  Owned
+                </label>
+              </div>
+              <div class="form-grid two-up">
+                <label>
+                  Description
+                  <textarea name="description" rows="5"></textarea>
+                </label>
+                <label>
+                  Personal notes
+                  <textarea name="notes" rows="5"></textarea>
+                </label>
+              </div>
+              <button type="submit" id="saveGameButton">Save game</button>
+            </form>
+            <div id="gameFormStatus" class="inline-status" role="status" hidden></div>
+          </section>
+
+          <div class="manage-split">
+            <section class="editor-panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Players</h2>
+                  <p>Add everyone whose statistics should be tracked.</p>
+                </div>
+              </div>
+              <form id="playerForm">
+                <label>
+                  Display name
+                  <input name="displayName" required />
+                </label>
+                <button type="submit">Add player</button>
+              </form>
+              <div id="playerFormStatus" class="inline-status" role="status" hidden></div>
+              <div class="record-list" id="managePlayerList"></div>
+            </section>
+
+            <section class="editor-panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Game-specific fields</h2>
+                  <p>Create play-wide or per-player values for one game.</p>
+                </div>
+              </div>
+              <form id="fieldForm">
+                <input type="hidden" name="fieldId" />
+                <label>
+                  Game
+                  <select name="gameId" id="fieldGameId" required></select>
+                </label>
+                <div class="form-grid two-up">
+                  <label>
+                    Field label
+                    <input name="label" required />
+                  </label>
+                  <label>
+                    Field key
+                    <input name="fieldKey" pattern="[a-z][a-z0-9_]{0,49}" required />
+                  </label>
+                  <label>
+                    Applies to
+                    <select name="scope" required>
+                      <option value="player">Each player</option>
+                      <option value="play">Whole play</option>
+                    </select>
+                  </label>
+                  <label>
+                    Value type
+                    <select name="fieldType" required>
+                      <option value="text">Text</option>
+                      <option value="number">Number</option>
+                      <option value="boolean">Yes or no</option>
+                      <option value="select">Option list</option>
+                    </select>
+                  </label>
+                  <label>
+                    Options, comma separated
+                    <input name="options" />
+                  </label>
+                  <label>
+                    Unit
+                    <input name="unit" />
+                  </label>
+                  <label>
+                    Sort order
+                    <input name="sortOrder" type="number" value="0" />
+                  </label>
+                  <label class="checkbox-label">
+                    <input name="required" type="checkbox" />
+                    Required
+                  </label>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" id="saveFieldButton">Save field</button>
+                  <button class="button-secondary" id="cancelFieldEdit" type="button" hidden>Cancel edit</button>
+                </div>
+              </form>
+              <div id="fieldFormStatus" class="inline-status" role="status" hidden></div>
+              <div class="record-list" id="manageFieldList"></div>
+            </section>
+          </div>
+
+          <section class="records-panel">
+            <div class="section-heading">
+              <div>
+                <h2>Game records</h2>
+                <p id="manageGameCount">Loading games...</p>
+              </div>
+            </div>
+            <div class="record-list" id="manageGameList"></div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0/dist/umd/supabase.js"></script>
+    <script src="app.js?v=__ASSET_VERSION__"></script>
+  </body>
+</html>

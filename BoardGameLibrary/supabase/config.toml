@@ -1,0 +1,4 @@
+project_id = "fupysqufnvblxyocqxey"
+
+[functions.bgg-game]
+verify_jwt = true

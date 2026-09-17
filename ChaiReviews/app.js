@@ -5,6 +5,13 @@ const supabaseClient = window.supabase
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
   : null;
 
+const appState = {
+  session: null,
+  isAdmin: false,
+  manageBound: false,
+  reviewBound: false
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   initializePage().catch((error) => {
     renderGlobalStatus(error.message || "Unexpected error.", "error");
@@ -20,6 +27,21 @@ async function initializePage() {
     return;
   }
 
+  bindAuthControls();
+  const { data, error } = await supabaseClient.auth.getSession();
+  if (error) {
+    throw new Error(error.message);
+  }
+  await applySession(data.session);
+
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    window.setTimeout(() => {
+      handleAuthChange(session).catch((authError) => {
+        renderGlobalStatus(authError.message || "Could not update sign-in state.", "error");
+      });
+    }, 0);
+  });
+
   if (page === "austin") {
     await initializeAustinPage();
     return;
@@ -31,12 +53,100 @@ async function initializePage() {
   }
 
   if (page === "manage") {
-    await initializeManagePage();
+    if (appState.isAdmin) {
+      await initializeManagePage();
+    }
     return;
   }
 
   if (page === "review") {
     await initializeReviewPage();
+  }
+}
+
+async function handleAuthChange(session) {
+  await applySession(session);
+
+  if (document.body.dataset.page === "manage" && appState.isAdmin) {
+    await initializeManagePage();
+  }
+}
+
+async function applySession(session) {
+  appState.session = session;
+  appState.isAdmin = false;
+
+  if (session) {
+    const { data, error } = await supabaseClient.rpc("is_portfolio_admin");
+    if (error) {
+      throw new Error(error.message);
+    }
+    appState.isAdmin = data === true;
+  }
+
+  renderAuthState();
+  renderReviewAccess();
+}
+
+function bindAuthControls() {
+  const loginForm = document.getElementById("loginForm");
+  const signOutButton = document.getElementById("signOutButton");
+
+  loginForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const email = form.elements.namedItem("email").value.trim();
+    setLocalStatus("authStatus", "Sending sign-in link...", "info");
+
+    const redirectUrl = new URL(window.location.href);
+    redirectUrl.hash = "";
+    redirectUrl.search = "";
+
+    const { error } = await supabaseClient.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: redirectUrl.toString() }
+    });
+
+    if (error) {
+      setLocalStatus("authStatus", error.message, "error");
+      return;
+    }
+
+    form.reset();
+    setLocalStatus("authStatus", "Sign-in link sent. Check your email.", "success");
+  });
+
+  signOutButton?.addEventListener("click", async () => {
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) {
+      setLocalStatus("authStatus", error.message, "error");
+    }
+  });
+}
+
+function renderAuthState() {
+  const signedOutView = document.getElementById("signedOutView");
+  const signedInView = document.getElementById("signedInView");
+  const signedInEmail = document.getElementById("signedInEmail");
+  const adminOnly = document.getElementById("adminOnly");
+
+  if (signedOutView) {
+    signedOutView.hidden = Boolean(appState.session);
+  }
+  if (signedInView) {
+    signedInView.hidden = !appState.session;
+  }
+  if (signedInEmail) {
+    signedInEmail.textContent = appState.session?.user?.email || "authenticated account";
+  }
+  if (adminOnly) {
+    adminOnly.hidden = !appState.isAdmin;
+  }
+
+  if (appState.session && !appState.isAdmin) {
+    setLocalStatus("authStatus", "This account is signed in but is not a portfolio administrator.", "error");
+  } else if (appState.session && appState.isAdmin) {
+    setLocalStatus("authStatus", "Administrator access enabled.", "success");
   }
 }
 
@@ -218,7 +328,10 @@ async function initializeAustinPage() {
 }
 
 async function initializeManagePage() {
-  bindManageForms();
+  if (!appState.manageBound) {
+    bindManageForms();
+    appState.manageBound = true;
+  }
   await refreshManageCollections();
 }
 
@@ -329,11 +442,15 @@ function renderManageLists(shops, reviewers, chaiItems) {
 }
 
 async function initializeReviewPage() {
-  bindReviewForm();
+  if (!appState.reviewBound) {
+    bindReviewForm();
+    appState.reviewBound = true;
+  }
   await refreshReviewPageData();
 }
 
 let reviewPageRows = [];
+let reviewPageReviewers = [];
 
 function bindReviewForm() {
   const reviewerSelect = document.getElementById("reviewReviewerId");
@@ -342,6 +459,27 @@ function bindReviewForm() {
 
   reviewerSelect.addEventListener("change", syncExistingReview);
   chaiSelect.addEventListener("change", syncExistingReview);
+
+  document.getElementById("publicReviewerForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    setLocalStatus("publicReviewerStatus", "Adding reviewer...", "info");
+    const { data, error } = await supabaseClient.rpc("create_public_chai_reviewer", {
+      p_first_name: form.firstName.value.trim(),
+      p_last_name: form.lastName.value.trim()
+    });
+
+    if (error) {
+      setLocalStatus("publicReviewerStatus", error.message, "error");
+      return;
+    }
+
+    form.reset();
+    await refreshReviewPageData();
+    reviewerSelect.value = String(data);
+    await syncExistingReview();
+    setLocalStatus("publicReviewerStatus", "Reviewer added and selected.", "success");
+  });
 
   document.getElementById("reviewForm").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -356,10 +494,17 @@ function bindReviewForm() {
 
     const normalizedRating = Math.round(rating * 1000) / 1000;
 
+    if (selectedReviewerIsProtected() && !appState.isAdmin) {
+      setLocalStatus("reviewStatus", "Administrator sign-in is required to edit Delaine Pico reviews.", "error");
+      return;
+    }
+
     setLocalStatus("reviewStatus", "Saving review...", "info");
-    const { error } = await supabaseClient
-      .from("chai_review")
-      .upsert({ chai_id: chaiId, reviewer_id: reviewerId, rating: normalizedRating }, { onConflict: "chai_id,reviewer_id" });
+    const { error } = await supabaseClient.rpc("save_chai_review", {
+      p_chai_id: chaiId,
+      p_reviewer_id: reviewerId,
+      p_rating: normalizedRating
+    });
 
     if (error) {
       setLocalStatus("reviewStatus", error.message, "error");
@@ -387,6 +532,7 @@ async function refreshReviewPageData() {
   }
 
   reviewPageRows = reviewsResult.data;
+  reviewPageReviewers = reviewersResult.data;
   renderReviewerOptions(reviewersResult.data, "reviewReviewerId");
   renderChaiOptions(chaiResult.data, "reviewChaiId");
   renderExistingReviews();
@@ -404,6 +550,29 @@ function renderReviewerOptions(reviewers, selectId) {
   if (currentValue && reviewers.some((reviewer) => String(reviewer.reviewer_id) === currentValue)) {
     select.value = currentValue;
   }
+}
+
+function selectedReviewerIsProtected() {
+  const reviewerId = Number(document.getElementById("reviewReviewerId")?.value);
+  const reviewer = reviewPageReviewers.find((candidate) => candidate.reviewer_id === reviewerId);
+  return reviewer
+    ? `${reviewer.first_name.trim()} ${reviewer.last_name.trim()}`.toLowerCase() === "delaine pico"
+    : false;
+}
+
+function renderReviewAccess() {
+  const saveButton = document.getElementById("saveReviewButton");
+  if (!saveButton) {
+    return;
+  }
+
+  const requiresAdmin = selectedReviewerIsProtected() && !appState.isAdmin;
+  saveButton.disabled = requiresAdmin;
+  setLocalStatus(
+    "reviewAccessStatus",
+    requiresAdmin ? "Administrator sign-in is required to edit Delaine Pico reviews." : "",
+    requiresAdmin ? "info" : "success"
+  );
 }
 
 function renderChaiOptions(chaiItems, selectId) {
@@ -454,6 +623,7 @@ async function syncExistingReview() {
   const ratingInput = document.getElementById("reviewRating");
 
   renderExistingReviews();
+  renderReviewAccess();
 
   if (!reviewerId || !chaiId || !ratingInput) {
     return;

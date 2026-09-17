@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Board Game Plays</title>
+    <meta name="description" content="Record and browse plays from Austin's board game collection." />
+    <meta name="theme-color" content="#174f59" />
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Black&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=__ASSET_VERSION__" />
+  </head>
+  <body data-page="plays">
+    <div class="page-shell">
+      <header class="topbar compact-topbar">
+        <div class="brand-block">
+          <span class="cabinet-label">Table history</span>
+          <h1>Recorded Plays</h1>
+          <p>Scores, winners, strategies, and game-specific results from every table.</p>
+        </div>
+        <a class="home-link" href="../index.html">Back to home</a>
+      </header>
+
+      <nav class="page-nav" aria-label="Board game library">
+        <a class="nav-link" data-nav="collection" href="index.html">Collection</a>
+        <a class="nav-link" data-nav="plays" href="plays.html">Plays</a>
+        <a class="nav-link" data-nav="players" href="players.html">Players</a>
+        <a class="nav-link" data-nav="manage" href="manage.html">Manage</a>
+      </nav>
+
+      <div id="globalStatus" class="status-banner" role="status" hidden></div>
+
+      <main>
+        <section class="play-entry-panel" id="playAdminOnly" hidden>
+          <div class="section-heading">
+            <div>
+              <h2>Record a play</h2>
+              <p>Fields change with the selected game.</p>
+            </div>
+          </div>
+
+          <form id="playForm">
+            <div class="form-grid four-up">
+              <label>
+                Game
+                <select name="gameId" id="playGameId" required></select>
+              </label>
+              <label>
+                Played at
+                <input name="playedAt" type="datetime-local" required />
+              </label>
+              <label>
+                Location
+                <input name="location" />
+              </label>
+              <label>
+                Duration in minutes
+                <input name="durationMinutes" type="number" min="1" />
+              </label>
+            </div>
+
+            <div class="dynamic-fields" id="playCustomFields"></div>
+
+            <section class="participant-builder">
+              <div class="subsection-heading">
+                <h3>Players</h3>
+                <div class="add-player-row">
+                  <select id="playerToAdd" aria-label="Player to add"></select>
+                  <button class="button-secondary" id="addPlayerButton" type="button">Add player</button>
+                </div>
+              </div>
+              <div class="participant-list" id="participantList"></div>
+            </section>
+
+            <label>
+              Play notes
+              <textarea name="notes" rows="4"></textarea>
+            </label>
+
+            <button type="submit">Save play</button>
+          </form>
+          <div id="playFormStatus" class="inline-status" role="status" hidden></div>
+        </section>
+
+        <section class="history-panel">
+          <div class="section-heading">
+            <div>
+              <h2>Play history</h2>
+              <p id="playHistoryCount">Loading plays...</p>
+            </div>
+            <p class="admin-context" id="playAdminContext">Public view</p>
+          </div>
+          <div class="play-history" id="playHistory" aria-live="polite">
+            <div class="loading-block">Loading play history...</div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0/dist/umd/supabase.js"></script>
+    <script src="app.js?v=__ASSET_VERSION__"></script>
+  </body>
+</html>

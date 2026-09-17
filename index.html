@@ -6,7 +6,7 @@
     <title>Austin Pico — Projects</title>
     <meta
       name="description"
-      content="Welcome to Austin Pico's website — a weighted dinner planner, a wedding word game, and two review databases."
+      content="Welcome to Austin Pico's website with games, planners, reviews, and personal collection databases."
     />
     <meta name="theme-color" content="#0d0b0a" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -15,7 +15,7 @@
     <meta property="og:title" content="Austin Pico — Projects" />
     <meta
       property="og:description"
-      content="A weighted dinner planner, a wedding word game, and two review databases."
+      content="Games, planners, reviews, and personal collection databases."
     />
     <meta property="og:url" content="https://austinpico.com/" />
 
@@ -35,12 +35,14 @@
         --line: rgba(243, 237, 226, 0.14);
         --line-strong: rgba(243, 237, 226, 0.28);
 
-        /* The four project accents double as the colours of the beam rising
+          /* The project accents double as the colours of the beam rising
            out of the hole. */
         --a-menu: #e6bc49;
         --a-wedd: #7bbce0;
         --a-chick: #f0576b;
         --a-chai: #e0873f;
+          --a-books: #70b891;
+          --a-games: #f1c84b;
 
         --font-display: "Fraunces", Georgia, "Times New Roman", serif;
         --font-sans: "Karla", "Segoe UI", system-ui, sans-serif;
@@ -151,11 +153,11 @@
         background: linear-gradient(
             20deg,
             var(--a-menu),
-            rgba(123, 188, 224, 0.13) 16.5%,
-            var(--a-chick) 33%,
-            rgba(240, 87, 107, 0.13) 49.5%,
-            var(--a-wedd) 66%,
-            rgba(224, 135, 63, 0.38) 85.5%,
+            var(--a-wedd) 18%,
+            var(--a-chick) 36%,
+            var(--a-chai) 54%,
+            var(--a-books) 72%,
+            var(--a-games) 88%,
             var(--a-menu) 100%
           )
           0 100% / 100% 200%;
@@ -369,8 +371,11 @@
           rotateY(20deg);
       }
 
-      /* The far side of a four-card loop — parked out of sight. */
-      .card[data-off="2"] {
+      /* Projects beyond the immediate neighbours stay parked out of sight. */
+      .card[data-off="2"],
+      .card[data-off="-2"],
+      .card[data-off="3"],
+      .card[data-off="-3"] {
         z-index: 1;
         opacity: 0;
         transform: translate(-50%, -50%) scale(0.62);
@@ -604,7 +609,7 @@
         .arrow,
         .dot::before,
         .card-go span {
-          transition-duration: 0.01ms !important;
+          transition: none !important;
         }
 
         .hole-beam {
@@ -742,6 +747,52 @@
               <span class="card-desc">
                 Delaine's chai scored out of ten, with the shop, the city, and
                 whether it came iced or hot.
+              </span>
+              <span class="card-go">Open <span aria-hidden="true">&rarr;</span></span>
+            </a>
+
+            <a
+              class="card"
+              href="BookLibrary/index.html"
+              style="--accent: #70b891"
+            >
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 4.5h5.2A2.8 2.8 0 0 1 12 7.3V20a3.2 3.2 0 0 0-3.2-3.2H4z" />
+                  <path d="M20 4.5h-5.2A2.8 2.8 0 0 0 12 7.3V20a3.2 3.2 0 0 1 3.2-3.2H20z" />
+                </svg>
+              </span>
+              <span class="card-kind">Database</span>
+              <span class="card-name">Book Library</span>
+              <span class="card-desc">
+                A catalog of owned and wanted books with authors, genres,
+                editions, reading status, and a relative favorite-to-least
+                favorite shelf for completed books.
+              </span>
+              <span class="card-go">Open <span aria-hidden="true">&rarr;</span></span>
+            </a>
+
+            <a
+              class="card"
+              href="BoardGameLibrary/index.html"
+              style="--accent: #f1c84b"
+            >
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.5" stroke-linejoin="round">
+                  <path d="M5 4.5h14l2 4.2-2 10.8H5L3 8.7z" />
+                  <circle cx="8" cy="10" r="1" fill="currentColor" stroke="none" />
+                  <circle cx="16" cy="10" r="1" fill="currentColor" stroke="none" />
+                  <circle cx="12" cy="15.5" r="1" fill="currentColor" stroke="none" />
+                </svg>
+              </span>
+              <span class="card-kind">Database</span>
+              <span class="card-name">Board Game Library</span>
+              <span class="card-desc">
+                Tracks the game collection, flexible play records, scores and
+                winners, game-specific fields, BoardGameGeek details, and
+                player performance by game and category.
               </span>
               <span class="card-go">Open <span aria-hidden="true">&rarr;</span></span>
             </a>
@@ -1097,8 +1148,7 @@
         var timer = null;
         var CYCLE_MS = 5400;
 
-        // For four cards the offsets land on 0, 1, 2, -1 — the "2" is the far
-        // side of the loop, parked out of sight.
+        // Keep the nearest projects on the flanks and park the rest out of sight.
         function offsetOf(i) {
           var d = (i - active + total) % total;
           if (d > total / 2) d -= total;

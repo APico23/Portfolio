@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Board Game Player Statistics</title>
+    <meta name="description" content="Player totals, win rates, favorite games, and category performance." />
+    <meta name="theme-color" content="#174f59" />
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Black&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=__ASSET_VERSION__" />
+  </head>
+  <body data-page="players">
+    <div class="page-shell">
+      <header class="topbar compact-topbar">
+        <div class="brand-block">
+          <span class="cabinet-label">Around the table</span>
+          <h1>Player Statistics</h1>
+          <p>Play totals, wins, most-played games, and the categories each player knows best.</p>
+        </div>
+        <a class="home-link" href="../index.html">Back to home</a>
+      </header>
+
+      <nav class="page-nav" aria-label="Board game library">
+        <a class="nav-link" data-nav="collection" href="index.html">Collection</a>
+        <a class="nav-link" data-nav="plays" href="plays.html">Plays</a>
+        <a class="nav-link" data-nav="players" href="players.html">Players</a>
+        <a class="nav-link" data-nav="manage" href="manage.html">Manage</a>
+      </nav>
+
+      <div id="globalStatus" class="status-banner" role="status" hidden></div>
+
+      <main>
+        <section class="leader-strip" aria-label="Player summary">
+          <div>
+            <span class="stat-label">Players tracked</span>
+            <strong id="trackedPlayerCount">-</strong>
+          </div>
+          <div>
+            <span class="stat-label">Most active</span>
+            <strong id="mostActivePlayer">-</strong>
+          </div>
+          <div>
+            <span class="stat-label">Most wins</span>
+            <strong id="mostWinningPlayer">-</strong>
+          </div>
+        </section>
+
+        <section class="player-stats-panel">
+          <div class="section-heading">
+            <div>
+              <h2>Everyone at the table</h2>
+              <p>Win rate is wins divided by recorded plays.</p>
+            </div>
+          </div>
+          <div class="player-grid" id="playerStatsGrid" aria-live="polite">
+            <div class="loading-block">Loading player statistics...</div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0/dist/umd/supabase.js"></script>
+    <script src="app.js?v=__ASSET_VERSION__"></script>
+  </body>
+</html>

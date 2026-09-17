@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Austin's Book Library</title>
+    <meta name="description" content="Austin's owned books, reading history, and book wish list." />
+    <meta name="theme-color" content="#173a2e" />
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Literata:opsz,wght@7..72,500;7..72,650&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=__ASSET_VERSION__" />
+  </head>
+  <body data-page="catalog">
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <span class="collection-label">Austin's collection</span>
+          <h1>The Book Library</h1>
+          <p>Owned books, finished reads, and titles waiting for a place on the shelf.</p>
+        </div>
+        <a class="home-link" href="../index.html">Back to home</a>
+      </header>
+
+      <nav class="page-nav" aria-label="Book library">
+        <a class="nav-link" data-nav="catalog" href="index.html">Library</a>
+        <a class="nav-link" data-nav="ranking" href="ranking.html">Read ranking</a>
+        <a class="nav-link" data-nav="manage" href="manage.html">Manage</a>
+      </nav>
+
+      <div id="globalStatus" class="status-banner" role="status" hidden></div>
+
+      <main>
+        <section class="stats-strip" aria-label="Library summary">
+          <div class="stat-block">
+            <span class="stat-label">Owned</span>
+            <strong class="stat-value" id="ownedCount">-</strong>
+          </div>
+          <div class="stat-block">
+            <span class="stat-label">Want to own</span>
+            <strong class="stat-value" id="wantedCount">-</strong>
+          </div>
+          <div class="stat-block">
+            <span class="stat-label">Read</span>
+            <strong class="stat-value" id="readCount">-</strong>
+          </div>
+          <div class="stat-block stat-wide">
+            <span class="stat-label">Current favorite</span>
+            <strong class="stat-value stat-title" id="favoriteBook">-</strong>
+          </div>
+        </section>
+
+        <section class="catalog-panel">
+          <div class="catalog-toolbar">
+            <div>
+              <h2>All books</h2>
+              <p id="catalogCount" aria-live="polite">Loading collection...</p>
+            </div>
+            <label class="search-field">
+              <span>Search books</span>
+              <input id="bookSearch" type="search" autocomplete="off" />
+            </label>
+          </div>
+
+          <div class="filter-tabs" id="bookFilters" aria-label="Filter books">
+            <button type="button" data-filter="all" aria-pressed="true">All</button>
+            <button type="button" data-filter="owned" aria-pressed="false">Owned</button>
+            <button type="button" data-filter="wanted" aria-pressed="false">Want to own</button>
+            <button type="button" data-filter="read" aria-pressed="false">Read</button>
+          </div>
+
+          <div class="book-grid" id="bookGrid" aria-live="polite">
+            <div class="loading-block">Loading books...</div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0/dist/umd/supabase.js"></script>
+    <script src="app.js?v=__ASSET_VERSION__"></script>
+  </body>
+</html>

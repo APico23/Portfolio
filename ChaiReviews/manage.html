@@ -33,7 +33,26 @@
 
       <div id="globalStatus" class="status-banner" hidden></div>
 
-      <section class="manage-grid">
+      <section class="auth-panel">
+        <div id="signedOutView">
+          <h2>Administrator sign in</h2>
+          <form class="inline-auth-form" id="loginForm">
+            <label>
+              Email address
+              <input type="email" name="email" autocomplete="email" required />
+            </label>
+            <button type="submit">Email sign-in link</button>
+          </form>
+        </div>
+        <div class="signed-in-row" id="signedInView" hidden>
+          <p>Signed in as <strong id="signedInEmail"></strong></p>
+          <button class="button-secondary" id="signOutButton" type="button">Sign out</button>
+        </div>
+        <div id="authStatus" class="inline-status" role="status" hidden></div>
+      </section>
+
+      <div id="adminOnly" hidden>
+        <section class="manage-grid">
         <article class="form-panel">
           <h2>Add chai shop</h2>
           <form id="shopForm">
@@ -89,9 +108,9 @@
           </form>
           <div id="chaiStatus" class="inline-status" hidden></div>
         </article>
-      </section>
+        </section>
 
-      <section class="manage-grid">
+        <section class="manage-grid">
         <article class="list-panel">
           <h2>Chai shops</h2>
           <ul class="stack-list" id="shopList"></ul>
@@ -104,7 +123,8 @@
           <h2>Chai items</h2>
           <ul class="stack-list" id="chaiList"></ul>
         </article>
-      </section>
+        </section>
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0/dist/umd/supabase.js"></script>
