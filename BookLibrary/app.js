@@ -378,6 +378,7 @@ function bindManageControls() {
   document.getElementById("bookForm").addEventListener("submit", saveBook);
   document.getElementById("cancelBookEdit").addEventListener("click", resetBookForm);
   document.getElementById("isbnLookupButton").addEventListener("click", lookupBookByIsbn);
+  document.getElementById("titleLookupButton").addEventListener("click", lookupBooksByTitle);
 }
 
 async function refreshManagePage() {
@@ -522,6 +523,7 @@ function resetBookForm() {
   const form = document.getElementById("bookForm");
   form.reset();
   formControl(form, "bookId").value = "";
+  clearBookLookupResults();
   setText("bookFormHeading", "Add a book");
   setText("saveBookButton", "Save book");
   document.getElementById("cancelBookEdit").hidden = true;
@@ -587,6 +589,7 @@ async function lookupBookByIsbn() {
   setFormValue(form, "pageCount", book.number_of_pages);
   setFormValue(form, "coverUrl", book.cover?.large || book.cover?.medium);
   setFormValue(form, "openLibraryKey", openLibraryKey);
+  clearBookLookupResults();
 
   if (isbn.length === 13) {
     isbn13Control.value = isbn;
@@ -595,6 +598,110 @@ async function lookupBookByIsbn() {
   }
 
   setLocalStatus("bookFormStatus", "Book details loaded. Review them before saving.", "success");
+}
+
+async function lookupBooksByTitle() {
+  const form = document.getElementById("bookForm");
+  const title = formControl(form, "title").value.trim();
+  const author = splitList(formControl(form, "authors").value)[0] || "";
+  if (title.length < 2) {
+    setLocalStatus("bookFormStatus", "Enter at least two title characters first.", "error");
+    return;
+  }
+
+  setLocalStatus("bookFormStatus", "Searching Open Library...", "info");
+  const parameters = new URLSearchParams({
+    title,
+    fields: "key,title,subtitle,author_name,first_publish_year,cover_i,subject",
+    limit: "8"
+  });
+  if (author) {
+    parameters.set("author", author);
+  }
+
+  let response;
+  try {
+    response = await fetch(`https://openlibrary.org/search.json?${parameters}`);
+  } catch (_error) {
+    setLocalStatus("bookFormStatus", "Open Library search failed. Try again later.", "error");
+    return;
+  }
+  if (!response.ok) {
+    setLocalStatus("bookFormStatus", "Open Library search failed. Try again later.", "error");
+    return;
+  }
+
+  const result = await response.json();
+  const books = Array.isArray(result.docs) ? result.docs.filter((book) => book?.key && book?.title) : [];
+  renderBookLookupResults(books);
+  setLocalStatus(
+    "bookFormStatus",
+    books.length ? "Choose the closest match below. Edition details may vary." : "No Open Library records matched that title and author.",
+    books.length ? "info" : "error"
+  );
+}
+
+function renderBookLookupResults(books) {
+  const container = document.getElementById("bookLookupResults");
+  container.replaceChildren();
+  container.hidden = !books.length;
+
+  books.forEach((book) => {
+    const row = createElement("article", "record-row");
+    const main = createElement("div", "record-main");
+    main.append(createElement("h3", "", book.title));
+    main.append(createElement(
+      "p",
+      "",
+      [book.author_name?.join(", "), book.first_publish_year ? `First published ${book.first_publish_year}` : null]
+        .filter(Boolean)
+        .join(" | ")
+    ));
+
+    const chooseButton = createElement("button", "button-secondary", "Use this record");
+    chooseButton.type = "button";
+    chooseButton.addEventListener("click", () => applyBookLookupResult(book));
+    row.append(main, chooseButton);
+    container.append(row);
+  });
+}
+
+async function applyBookLookupResult(book) {
+  const form = document.getElementById("bookForm");
+  setLocalStatus("bookFormStatus", "Loading work details...", "info");
+
+  let work = {};
+  if (/^\/works\/OL\d+W$/.test(book.key)) {
+    try {
+      const response = await fetch(`https://openlibrary.org${book.key}.json`);
+      if (response.ok) {
+        work = await response.json();
+      }
+    } catch (_error) {
+      work = {};
+    }
+  }
+
+  const description = typeof work.description === "string"
+    ? work.description
+    : work.description?.value;
+  const subjects = Array.isArray(work.subjects) && work.subjects.length ? work.subjects : book.subject;
+
+  setFormValue(form, "title", book.title);
+  setFormValue(form, "subtitle", book.subtitle);
+  setFormValue(form, "authors", book.author_name?.join(", "));
+  setFormValue(form, "genres", subjects?.slice(0, 10).join(", "));
+  setFormValue(form, "coverUrl", book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg` : "");
+  setFormValue(form, "openLibraryKey", book.key);
+  setFormValue(form, "description", description);
+  clearBookLookupResults();
+  setLocalStatus("bookFormStatus", "Work details loaded. Enter the edition year, publisher, and page count from your copy.", "success");
+}
+
+function clearBookLookupResults() {
+  const container = document.getElementById("bookLookupResults");
+  container.replaceChildren();
+  container.hidden = true;
 }
 
 function createBookCover(book, imageClass, fallbackClass) {

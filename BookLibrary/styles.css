@@ -742,6 +742,17 @@ legend {
   margin-bottom: 1rem;
 }
 
+.title-lookup-row {
+  margin-top: 1rem;
+}
+
+.title-lookup-row p {
+  align-self: center;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .record-list {
   border-top: 2px solid var(--forest);
 }
