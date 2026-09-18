@@ -18,7 +18,8 @@ const gameState = {
   manageBound: false,
   playBound: false,
   rankingSortable: null,
-  rankingSaving: false
+  rankingSaving: false,
+  lastRandomGameId: null
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -44,7 +45,7 @@ async function initializeBoardGames() {
   await applySession(data.session);
 
   if (page === "collection") {
-    document.getElementById("gameSearch").addEventListener("input", renderCollection);
+    bindCollectionControls();
     bindGameDialog();
     await loadCollectionData();
     renderCollectionPage();
@@ -221,29 +222,95 @@ function renderCollectionPage() {
     mostPlayedCount ? `${mostPlayed.name} (${mostPlayedCount})` : "No plays yet"
   );
   setText("lastPlayedGame", lastPlay?.game?.name || "No plays yet");
+  populateCollectionGenreFilter();
   renderCollection();
+}
+
+function bindCollectionControls() {
+  document.getElementById("collectionFilters").addEventListener("submit", (event) => event.preventDefault());
+  document.getElementById("gameSearch").addEventListener("input", renderCollection);
+  document.getElementById("playerCountFilter").addEventListener("input", renderCollection);
+  [
+    "genreFilter",
+    "playTimeFilter",
+    "weightFilter",
+    "rankingFilter",
+    "gameTypeFilter",
+    "collectionSort",
+    "collectionSortDirection"
+  ]
+    .forEach((id) => document.getElementById(id).addEventListener("change", renderCollection));
+  document.getElementById("clearCollectionFilters").addEventListener("click", () => {
+    document.getElementById("collectionFilters").reset();
+    renderCollection();
+  });
+  document.getElementById("randomGameForm").addEventListener("submit", pickRandomGame);
+}
+
+function populateCollectionGenreFilter() {
+  const select = document.getElementById("genreFilter");
+  const selectedGenre = select.value;
+  const genres = [...new Set(gameState.games.flatMap((game) => game.categories || []))]
+    .filter(Boolean)
+    .sort((left, right) => left.localeCompare(right));
+  const allGenres = createElement("option", "", "All genres");
+  allGenres.value = "";
+  select.replaceChildren(allGenres);
+  genres.forEach((genre) => {
+    const option = createElement("option", "", genre);
+    option.value = genre;
+    select.append(option);
+  });
+  if (genres.includes(selectedGenre)) {
+    select.value = selectedGenre;
+  }
 }
 
 function renderCollection() {
   const search = document.getElementById("gameSearch").value.trim().toLowerCase();
+  const genre = document.getElementById("genreFilter").value;
+  const playerCount = positiveInteger(document.getElementById("playerCountFilter").value);
+  const maximumPlayTime = positiveInteger(document.getElementById("playTimeFilter").value);
+  const weightBand = document.getElementById("weightFilter").value;
+  const rankingFilter = document.getElementById("rankingFilter").value;
+  const gameType = document.getElementById("gameTypeFilter").value;
+  const sortBy = document.getElementById("collectionSort").value;
+  const sortDirection = document.getElementById("collectionSortDirection").value;
   const games = gameState.games.filter((game) => {
-    if (!search) {
-      return true;
-    }
-    return [
+    const searchableText = [
       game.name,
       ...(game.categories || []),
       ...(game.mechanisms || []),
       ...(game.designers || [])
-    ].filter(Boolean).join(" ").toLowerCase().includes(search);
-  });
+    ].filter(Boolean).join(" ").toLowerCase();
+    if (search && !searchableText.includes(search)) {
+      return false;
+    }
+    if (genre && !(game.categories || []).includes(genre)) {
+      return false;
+    }
+    if (playerCount && !supportsPlayerCount(game, playerCount)) {
+      return false;
+    }
+    if (maximumPlayTime && (!game.playing_time_minutes || Number(game.playing_time_minutes) > maximumPlayTime)) {
+      return false;
+    }
+    if (!matchesWeightBand(game, weightBand) || !matchesRankingFilter(game, rankingFilter)) {
+      return false;
+    }
+    return gameType === "all"
+      || (gameType === "base" && !isExpansion(game))
+      || (gameType === "expansion" && isExpansion(game));
+  }).sort((left, right) => compareCollectionGames(left, right, sortBy, sortDirection));
 
-  setText("collectionCount", `${games.length} game${games.length === 1 ? "" : "s"}`);
+  const hasFilters = Boolean(search || genre || playerCount || maximumPlayTime || weightBand || rankingFilter || gameType !== "all");
+  const count = `${games.length} game${games.length === 1 ? "" : "s"}`;
+  setText("collectionCount", hasFilters ? `${count} of ${gameState.games.length}` : count);
   const grid = document.getElementById("gameGrid");
   grid.replaceChildren();
 
   if (!games.length) {
-    grid.append(createMessage("No games match this search."));
+    grid.append(createMessage("No games match these filters."));
     return;
   }
 
@@ -252,22 +319,171 @@ function renderCollection() {
   grid.append(fragment);
 }
 
+function compareCollectionGames(left, right, sortBy, sortDirection) {
+  const leftValue = getCollectionSortValue(left, sortBy);
+  const rightValue = getCollectionSortValue(right, sortBy);
+  if (leftValue === null && rightValue !== null) {
+    return 1;
+  }
+  if (leftValue !== null && rightValue === null) {
+    return -1;
+  }
+
+  let comparison = 0;
+  if (typeof leftValue === "string" && typeof rightValue === "string") {
+    comparison = leftValue.localeCompare(rightValue);
+  } else if (leftValue !== null && rightValue !== null) {
+    comparison = leftValue - rightValue;
+  }
+  const direction = sortDirection === "desc" ? -1 : 1;
+  return (comparison * direction) || left.name.localeCompare(right.name);
+}
+
+function getCollectionSortValue(game, sortBy) {
+  if (sortBy === "genre") {
+    return game.categories?.[0] || null;
+  }
+  if (sortBy === "players") {
+    return positiveInteger(game.min_players);
+  }
+  if (sortBy === "time") {
+    return positiveInteger(game.playing_time_minutes);
+  }
+  if (sortBy === "weight") {
+    if (game.complexity_weight === null || game.complexity_weight === undefined || game.complexity_weight === "") {
+      return null;
+    }
+    const weight = Number(game.complexity_weight);
+    return Number.isFinite(weight) ? weight : null;
+  }
+  if (sortBy === "rank") {
+    return getPersonalRank(game);
+  }
+  return game.name;
+}
+
+function matchesWeightBand(game, weightBand) {
+  if (!weightBand) {
+    return true;
+  }
+  const weight = Number(game.complexity_weight);
+  if (!Number.isFinite(weight)) {
+    return false;
+  }
+  return String(Math.min(Math.floor(weight), 4)) === weightBand;
+}
+
+function matchesRankingFilter(game, rankingFilter) {
+  if (!rankingFilter) {
+    return true;
+  }
+  const rank = getPersonalRank(game);
+  if (rankingFilter === "ranked") {
+    return rank !== null;
+  }
+  if (rankingFilter === "unranked") {
+    return rank === null;
+  }
+  return rank !== null && rank <= Number(rankingFilter);
+}
+
+function supportsPlayerCount(game, playerCount) {
+  const minimum = positiveInteger(game.min_players);
+  const maximum = positiveInteger(game.max_players);
+  if (!minimum && !maximum) {
+    return false;
+  }
+  return (!minimum || playerCount >= minimum) && (!maximum || playerCount <= maximum);
+}
+
+function isExpansion(game) {
+  return game.is_expansion === true
+    || (game.categories || []).some((category) => /expansion/i.test(category));
+}
+
+function getPersonalRank(game) {
+  if (!game.owned || isExpansion(game)) {
+    return null;
+  }
+  const storedRank = getStoredRank(game);
+  if (storedRank === null) {
+    return null;
+  }
+
+  return 1 + gameState.games.filter((candidate) => {
+    if (!candidate.owned || isExpansion(candidate)) {
+      return false;
+    }
+    const candidateRank = getStoredRank(candidate);
+    return candidateRank !== null && (
+      candidateRank < storedRank
+      || (candidateRank === storedRank && candidate.name.localeCompare(game.name) < 0)
+    );
+  }).length;
+}
+
+function getStoredRank(game) {
+  if (game.rank_position === null || game.rank_position === undefined) {
+    return null;
+  }
+  const rank = Number(game.rank_position);
+  return Number.isFinite(rank) && rank > 0 ? rank : null;
+}
+
+function pickRandomGame(event) {
+  event.preventDefault();
+  const playerCount = positiveInteger(document.getElementById("randomPlayerCount").value);
+  if (!playerCount) {
+    return;
+  }
+
+  const matches = gameState.games.filter((game) => (
+    game.owned && !isExpansion(game) && supportsPlayerCount(game, playerCount)
+  ));
+  const result = document.getElementById("randomGameResult");
+  result.replaceChildren();
+  result.hidden = false;
+
+  if (!matches.length) {
+    result.append(createElement("p", "random-game-empty", `No owned base games support ${playerCount} players.`));
+    return;
+  }
+
+  const freshMatches = matches.filter((game) => game.game_id !== gameState.lastRandomGameId);
+  const pool = freshMatches.length ? freshMatches : matches;
+  const game = pool[Math.floor(Math.random() * pool.length)];
+  gameState.lastRandomGameId = game.game_id;
+
+  result.append(createElement("span", "random-result-label", `${matches.length} possible`));
+  result.append(createElement("h3", "", game.name));
+  const facts = [
+    formatPlayerRange(game),
+    game.playing_time_minutes ? `${game.playing_time_minutes} min` : null,
+    game.complexity_weight ? `Weight ${formatDecimal(game.complexity_weight)}` : null
+  ].filter(Boolean);
+  result.append(createElement("p", "", facts.join(" | ")));
+  const detailsButton = createElement("button", "button-secondary random-details-button", "View details");
+  detailsButton.type = "button";
+  detailsButton.addEventListener("click", () => openGameDialog(game));
+  result.append(detailsButton);
+}
+
 async function loadGameRankingPage() {
-  const { data, error } = await supabaseClient
+  const gamesResult = await supabaseClient
     .from("board_games")
     .select("*")
     .eq("owned", true);
 
-  if (error) {
-    throw new Error(error.message);
+  if (gamesResult.error) {
+    throw new Error(gamesResult.error.message);
   }
-  gameState.games = data || [];
+  gameState.games = gamesResult.data || [];
 }
 
 function getRankedGames() {
   return gameState.games
-    .filter((game) => game.owned && Number.isFinite(Number(game.rank_position)))
-    .sort((left, right) => Number(left.rank_position) - Number(right.rank_position));
+    .filter((game) => game.owned && !isExpansion(game) && getPersonalRank(game) !== null)
+    .sort((left, right) => getPersonalRank(left) - getPersonalRank(right));
 }
 
 function renderGameRankingPage() {
@@ -275,7 +491,7 @@ function renderGameRankingPage() {
   gameState.rankingSortable = null;
 
   const rankedGames = getRankedGames();
-  setText("rankingCount", `${rankedGames.length} owned game${rankedGames.length === 1 ? "" : "s"}`);
+  setText("rankingCount", `${rankedGames.length} base game${rankedGames.length === 1 ? "" : "s"}`);
 
   const context = document.getElementById("rankingAdminContext");
   context.textContent = gameState.rankingSaving
@@ -286,7 +502,7 @@ function renderGameRankingPage() {
   const list = document.getElementById("rankingList");
   list.replaceChildren();
   if (!rankedGames.length) {
-    list.append(createMessage("No owned games are ranked yet."));
+    list.append(createMessage("No owned base games are ranked yet."));
     return;
   }
 
@@ -461,6 +677,17 @@ function createGameCard(game) {
   card.append(createGameImage(game, "game-image", "game-image-fallback"));
 
   const content = createElement("div", "game-content");
+  const labels = createElement("div", "game-card-labels");
+  const rank = getPersonalRank(game);
+  if (rank !== null) {
+    labels.append(createElement("span", "personal-rank-label", `Rank #${rank}`));
+  }
+  if (isExpansion(game)) {
+    labels.append(createElement("span", "expansion-label", "Expansion"));
+  }
+  if (labels.childElementCount) {
+    content.append(labels);
+  }
   const title = createElement("h3", "", game.name);
   const detailsButton = createElement("button", "game-detail-trigger", game.name);
   detailsButton.type = "button";
@@ -468,11 +695,9 @@ function createGameCard(game) {
   detailsButton.addEventListener("click", () => openGameDialog(game));
   title.replaceChildren(detailsButton);
   content.append(title);
-  content.append(createElement(
-    "p",
-    "game-designers",
-    game.designers?.length ? game.designers.join(", ") : "Designer not listed"
-  ));
+  if (game.categories?.length) {
+    content.append(createElement("p", "game-genres", game.categories.join(", ")));
+  }
 
   const facts = createElement("div", "game-facts");
   facts.append(createElement("span", "fact", formatPlayerRange(game)));
@@ -480,10 +705,10 @@ function createGameCard(game) {
   facts.append(createElement("span", "fact", game.complexity_weight ? `Weight ${formatDecimal(game.complexity_weight)}` : "Weight not set"));
   content.append(facts);
 
-  if (game.categories?.length) {
+  if (game.mechanisms?.length) {
     const tags = createElement("div", "game-tags");
-    game.categories.slice(0, 3).forEach((category) => {
-      tags.append(createElement("span", "game-tag", category));
+    game.mechanisms.slice(0, 3).forEach((mechanism) => {
+      tags.append(createElement("span", "game-tag", mechanism));
     });
     content.append(tags);
   }
@@ -1299,6 +1524,7 @@ function bindManageControls() {
   document.getElementById("bggExportForm").addEventListener("submit", openBggCollectionExport);
   document.getElementById("bggXmlExportButton").addEventListener("click", openBggCollectionXml);
   document.getElementById("bggImportForm").addEventListener("submit", importBggCollection);
+  document.getElementById("refreshBggMetadataButton").addEventListener("click", refreshBggMetadata);
   document.getElementById("cancelGameEdit").addEventListener("click", resetGameForm);
   document.getElementById("cancelFieldEdit").addEventListener("click", resetFieldForm);
 
@@ -1363,6 +1589,7 @@ async function saveGame(event) {
     image_url: optionalText(formControl(form, "imageUrl").value),
     thumbnail_url: optionalText(formControl(form, "thumbnailUrl").value),
     owned: formControl(form, "owned").checked,
+    is_expansion: formControl(form, "isExpansion").checked,
     notes: optionalText(formControl(form, "notes").value)
   };
 
@@ -1457,7 +1684,7 @@ function renderManageGames() {
     main.append(createElement(
       "p",
       "",
-      [game.year_published, formatPlayerRange(game), game.bgg_id ? `BGG ${game.bgg_id}` : null]
+      [game.year_published, formatPlayerRange(game), isExpansion(game) ? "Expansion" : null, game.bgg_id ? `BGG ${game.bgg_id}` : null]
         .filter(Boolean)
         .join(", ")
     ));
@@ -1559,6 +1786,7 @@ function startEditingGame(game) {
     formControl(form, name).value = value ?? "";
   });
   formControl(form, "owned").checked = game.owned;
+  formControl(form, "isExpansion").checked = isExpansion(game);
   setText("gameFormHeading", `Edit ${game.name}`);
   setText("saveGameButton", "Update game");
   document.getElementById("cancelGameEdit").hidden = false;
@@ -1571,6 +1799,7 @@ function resetGameForm() {
   form.reset();
   formControl(form, "gameId").value = "";
   formControl(form, "owned").checked = true;
+  formControl(form, "isExpansion").checked = false;
   setText("gameFormHeading", "Add a game");
   setText("saveGameButton", "Save game");
   document.getElementById("cancelGameEdit").hidden = true;
@@ -1680,18 +1909,24 @@ function openBggCollectionXml() {
 async function importBggCollection(event) {
   event.preventDefault();
   const form = event.currentTarget;
+  const submitButton = form.querySelector('button[type="submit"]');
   const file = formControl(form, "collectionFile").files[0];
   if (!file) {
     setLocalStatus("bggStatus", "Choose a BGG collection CSV or XML file.", "error");
     return;
   }
 
+  submitButton.disabled = true;
   setLocalStatus("bggStatus", "Reading collection file...", "info");
   let games;
   try {
     games = parseBggCollectionFile(await file.text(), file);
+    setLocalStatus("bggStatus", `Loading BGG details for ${games.length} games...`, "info");
+    const metadata = await loadBggMetadata(games.map((game) => game.bgg_id));
+    games = games.map((game) => mergeBggMetadata(game, metadata.get(game.bgg_id)));
   } catch (error) {
     setLocalStatus("bggStatus", error.message || "The collection file could not be read.", "error");
+    submitButton.disabled = false;
     return;
   }
 
@@ -1717,6 +1952,7 @@ async function importBggCollection(event) {
 
   if (!newGames.length && !metadataUpdates.length) {
     setLocalStatus("bggStatus", `No changes found. All ${games.length} collection games are already up to date.`, "info");
+    submitButton.disabled = false;
     return;
   }
 
@@ -1728,6 +1964,7 @@ async function importBggCollection(event) {
       await refreshManagePage();
       const prefix = importedCount ? `${importedCount} games imported before the error. ` : "";
       setLocalStatus("bggStatus", `${prefix}${error.message}`, "error");
+      submitButton.disabled = false;
       return;
     }
     importedCount += batch.length;
@@ -1746,6 +1983,7 @@ async function importBggCollection(event) {
         `${importedCount} new and ${updatedCount} existing games saved before the error. ${error.message}`,
         "error"
       );
+      submitButton.disabled = false;
       return;
     }
     updatedCount += 1;
@@ -1763,6 +2001,94 @@ async function importBggCollection(event) {
     `${importedCount} new, ${updatedCount} enriched, ${unchangedCount} unchanged.${imageNotice}`,
     "success"
   );
+  submitButton.disabled = false;
+}
+
+async function refreshBggMetadata() {
+  const button = document.getElementById("refreshBggMetadataButton");
+  const games = gameState.games.filter((game) => positiveInteger(game.bgg_id));
+  if (!games.length) {
+    setLocalStatus("bggStatus", "No games with BGG IDs are available to refresh.", "error");
+    return;
+  }
+
+  button.disabled = true;
+  setLocalStatus("bggStatus", `Loading BGG details for ${games.length} games...`, "info");
+  try {
+    const metadata = await loadBggMetadata(games.map((game) => game.bgg_id));
+    const updates = games.map((game) => {
+      const details = metadata.get(Number(game.bgg_id));
+      return details ? {
+        gameId: game.game_id,
+        values: {
+          categories: details.categories,
+          mechanisms: details.mechanisms,
+          designers: details.designers,
+          is_expansion: details.is_expansion,
+          bgg_synced_at: new Date().toISOString()
+        }
+      } : null;
+    }).filter(Boolean);
+
+    let updatedCount = 0;
+    for (let offset = 0; offset < updates.length; offset += 6) {
+      const batch = updates.slice(offset, offset + 6);
+      const results = await Promise.all(batch.map((update) => (
+        supabaseClient.from("board_games").update(update.values).eq("game_id", update.gameId)
+      )));
+      throwFirstError(...results);
+      updatedCount += batch.length;
+      setLocalStatus("bggStatus", `Saved BGG details for ${updatedCount} of ${updates.length} games...`, "info");
+    }
+
+    await refreshManagePage();
+    setLocalStatus("bggStatus", `Refreshed BGG details for ${updatedCount} games.`, "success");
+  } catch (error) {
+    setLocalStatus("bggStatus", error.message || "BGG details could not be refreshed.", "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function loadBggMetadata(bggIds) {
+  const uniqueIds = [...new Set(bggIds.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0))];
+  const metadata = new Map();
+  const failures = [];
+  for (let offset = 0; offset < uniqueIds.length; offset += 50) {
+    const batch = uniqueIds.slice(offset, offset + 50);
+    const { data, error } = await supabaseClient.functions.invoke("bgg-game", {
+      body: { bggIds: batch }
+    });
+    if (error) {
+      throw new Error(`BGG details could not be loaded: ${error.message}`);
+    }
+    (data?.games || []).forEach((game) => {
+      if (game.error) {
+        failures.push(Number(game.bgg_id));
+      } else {
+        metadata.set(Number(game.bgg_id), game);
+      }
+    });
+  }
+  const missingCount = uniqueIds.length - metadata.size;
+  if (missingCount) {
+    const failedIds = failures.length ? ` (${failures.slice(0, 5).join(", ")})` : "";
+    throw new Error(`BGG details could not be loaded for ${missingCount} game${missingCount === 1 ? "" : "s"}${failedIds}.`);
+  }
+  return metadata;
+}
+
+function mergeBggMetadata(game, metadata) {
+  if (!metadata) {
+    return game;
+  }
+  return {
+    ...game,
+    categories: metadata.categories?.length ? metadata.categories : game.categories || [],
+    mechanisms: metadata.mechanisms?.length ? metadata.mechanisms : game.mechanisms || [],
+    designers: metadata.designers?.length ? metadata.designers : game.designers || [],
+    is_expansion: metadata.is_expansion === true
+  };
 }
 
 function getMissingCollectionMetadata(existingGame, importedGame) {
@@ -1790,8 +2116,16 @@ function getMissingCollectionMetadata(existingGame, importedGame) {
       values[field] = importedValue;
     }
   });
+  ["categories", "mechanisms", "designers"].forEach((field) => {
+    if (!(existingGame[field] || []).length && (importedGame[field] || []).length) {
+      values[field] = importedGame[field];
+    }
+  });
   if (!existingGame.owned) {
     values.owned = true;
+  }
+  if (importedGame.is_expansion && !existingGame.is_expansion) {
+    values.is_expansion = true;
   }
   if (Object.keys(values).length) {
     values.bgg_synced_at = importedGame.bgg_synced_at;
@@ -1859,9 +2193,13 @@ function parseBggCollectionCsvRow(row) {
     min_age: leadingInteger(readCsvValue(row, "minage", "bggrecagerange"), 0, 100),
     complexity_weight: boundedDecimal(readCsvValue(row, "avgweight", "averageweight", "weight"), 1, 5),
     bgg_rating: boundedDecimal(readCsvValue(row, "average", "baverage"), 0, 10),
+    categories: splitList(readCsvValue(row, "categories", "category", "genres", "genre", "boardgamecategories", "boardgamecategory")),
+    mechanisms: splitList(readCsvValue(row, "mechanisms", "mechanism", "boardgamemechanics", "boardgamemechanic")),
+    designers: splitList(readCsvValue(row, "designers", "designer", "boardgamedesigners", "boardgamedesigner")),
     image_url: optionalText(readCsvValue(row, "image", "imageurl")),
     thumbnail_url: optionalText(readCsvValue(row, "thumbnail", "thumbnailurl")),
     owned: true,
+    is_expansion: isExpansionSubtype(readCsvValue(row, "subtype", "itemsubtype", "gametype", "objecttype")),
     notes: optionalText(readCsvValue(row, "comment", "usercomment")),
     bgg_synced_at: new Date().toISOString()
   };
@@ -1925,8 +2263,14 @@ function parseBggCollectionItem(item) {
     image_url: optionalText(item.querySelector("image")?.textContent || ""),
     thumbnail_url: optionalText(item.querySelector("thumbnail")?.textContent || ""),
     owned: true,
+    is_expansion: isExpansionSubtype(item.getAttribute("subtype")),
     bgg_synced_at: new Date().toISOString()
   };
+}
+
+function isExpansionSubtype(value) {
+  const subtype = String(value || "").trim().toLowerCase().replace(/[^a-z]/g, "");
+  return subtype === "expansion" || subtype === "boardgameexpansion";
 }
 
 function positiveInteger(value) {
